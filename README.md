@@ -78,7 +78,7 @@ Actual data is stored in the cloud (Yandex disk) since it is quite large.
 | Model                                                                     | Screenshot                                        |
 |---------------------------------------------------------------------------|:-------------------------------------------------:|
 | [scene_08](https://disk.yandex.ru/d/TqcjyFsrSLelbw/scene_08)              | ![](05_interiors/screenshots/scene_08.jpeg)               |
-| [scene_10](https://disk.yandex.ru/d/TqcjyFsrSLelbw/scene_10)              | ![](05_interiors/screenshots/scene_10.jpg)            |
+| [scene_10](https://disk.yandex.ru/d/TqcjyFsrSLelbw/scene_10)              | ![](05_interiors/screenshots/scene_10.jpeg)            |
 | [scene_21](https://disk.yandex.ru/d/TqcjyFsrSLelbw/scene_21)              | ![](05_interiors/screenshots/scene_21.jpeg)            |
 
 ### [06_exteriors](https://disk.yandex.ru/d/MetYef2wCEdiag)
