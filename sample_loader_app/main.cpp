@@ -7,9 +7,9 @@ std::vector<uint32_t> rayTraceCPU(std::shared_ptr<RayTracer> pRayTracer, uint32_
 {
   std::vector<uint32_t> raytracedImageData(width * height, 0u);
 #pragma omp parallel for default(none) shared(height, width, raytracedImageData, pRayTracer)
-  for (size_t j = 0; j < height; ++j)
+  for (int j = 0; j < height; ++j)
   {
-    for (size_t i = 0; i < width; ++i)
+    for (int i = 0; i < width; ++i)
     {
       pRayTracer->CastSingleRay(i, j, raytracedImageData.data());
     }
