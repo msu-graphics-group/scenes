@@ -1,6 +1,11 @@
 # Scenes
 Simple set of scenes for educational and research purpose in computer graphics applications.
 
+Scenes in this repository are in the in Hydra Renderer XML format ([HydraAPI](https://github.com/Ray-Tracing-Systems/HydraAPI),
+[Hydra renderer](http://www.raytracing.ru/)), check sample application which loads scene and renders it with simple
+ray tracing renderer using [embree](https://github.com/embree/embree) in [sample_loader_app](sample_loader_app) 
+as well as [loader guide](sample_loader_app/README.md).
+
 ## Showcase
 ### [01_simple_scenes](01_simple_scenes)
 | Model                                                             | Screenshot                                                         |
