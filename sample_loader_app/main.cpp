@@ -3,7 +3,7 @@
 #include "render/image_save.h"
 
 
-std::vector<uint32_t> rayTraceCPU(std::shared_ptr<RayTracer> pRayTracer, uint32_t width, uint32_t height)
+std::vector<uint32_t> rayTraceCPU(std::shared_ptr<RayTracer> pRayTracer, int width, int height)
 {
   std::vector<uint32_t> raytracedImageData(width * height, 0u);
 #pragma omp parallel for default(none) shared(height, width, raytracedImageData, pRayTracer)
