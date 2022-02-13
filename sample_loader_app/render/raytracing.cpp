@@ -12,11 +12,27 @@ void RayTracer::CastSingleRay(uint32_t tidX, uint32_t tidY, uint32_t* out_color)
   kernel_RayTrace(tidX, tidY, &rayPosAndNear, &rayDirAndFar, out_color);
 }
 
-void RayTracer::kernel_InitEyeRay(uint32_t tidX, uint32_t tidY, LiteMath::float4* rayPosAndNear, LiteMath::float4* rayDirAndFar)
+void RayTracer::CastSingleRay(uint32_t tidX, uint32_t tidY, SampleInfo* out_sample)
+{
+  LiteMath::float4 rayPosAndNear, rayDirAndFar;
+  kernel_InitEyeRay(tidX, tidY, &rayPosAndNear, &rayDirAndFar);
+
+  kernel_RayTrace(tidX, tidY, &rayPosAndNear, &rayDirAndFar, out_sample);
+}
+
+void RayTracer::CastSingleRay(uint32_t tidX, uint32_t tidY, float x_offset, float y_offset, SampleInfo* out_sample)
+{
+  LiteMath::float4 rayPosAndNear, rayDirAndFar;
+  kernel_InitEyeRay(tidX + x_offset, tidY + y_offset, &rayPosAndNear, &rayDirAndFar);
+
+  kernel_RayTrace(0, 0, &rayPosAndNear, &rayDirAndFar, out_sample);
+}
+
+void RayTracer::kernel_InitEyeRay(float tidX, float tidY, LiteMath::float4* rayPosAndNear, LiteMath::float4* rayDirAndFar)
 {
   *rayPosAndNear = to_float4(m_camPos, 1.0f);
   
-  const LiteMath::float3 rayDir  = EyeRayDir(float(tidX), float(tidY), float(m_width), float(m_height), m_invProjView);
+  const LiteMath::float3 rayDir  = EyeRayDir(tidX, tidY, float(m_width), float(m_height), m_invProjView);
   *rayDirAndFar  = to_float4(rayDir, FLT_MAX);
 }
 
@@ -30,6 +46,18 @@ void RayTracer::kernel_RayTrace(uint32_t tidX, uint32_t tidY, const LiteMath::fl
   CRT_Hit hit = m_pAccelStruct->RayQuery_NearestHit(rayPos, rayDir);
 
   out_color[tidY * m_width + tidX] = m_palette[hit.instId % palette_size];
+}
+
+void RayTracer::kernel_RayTrace(uint32_t tidX, uint32_t tidY, const LiteMath::float4* rayPosAndNear,
+                                const LiteMath::float4* rayDirAndFar, SampleInfo* out_sample)
+{
+  const LiteMath::float4 rayPos = *rayPosAndNear;
+  const LiteMath::float4 rayDir = *rayDirAndFar ;
+
+  CRT_Hit hit = m_pAccelStruct->RayQuery_NearestHit(rayPos, rayDir);
+
+  out_sample[tidY * m_width + tidX].color = m_palette[hit.instId % palette_size];
+  out_sample[tidY * m_width + tidX].objId = (hit.instId << 16) | hit.geomId;
 }
 
 
