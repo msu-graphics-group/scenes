@@ -14,7 +14,7 @@ static void add_bias_feature(std::vector<float> &a, uint32_t axis1)
   for (uint32_t i = 0; i < pointsCount; ++i)
   {
     memcpy((void*)&extended[i * (axis1 + 1)], (void*)&a[i * axis1], sizeof(float) * axis1);
-    extended[i * (axis1 + 1) + i] = 1;
+    extended[i * (axis1 + 1) + axis1] = 1;
   }
   a = extended;
 }
@@ -66,7 +66,7 @@ void SVM::fit(
     {
       const uint32_t x_offset = i * (pointDim + 1);
       const float margin = Y_train[i] * dot(weights.data(), X_train.data() + x_offset, pointDim + 1);
-      if (margin >= 1.f) // классифицируем верно
+      if (margin >= 1.f * 0.1f) // классифицируем верно
       {
         for (uint32_t j = 0; j < weights.size(); ++j)
           weights[j] = weights[j] - etha * alpha * weights[j] / epochs;
@@ -75,9 +75,9 @@ void SVM::fit(
       else // классифицируем неверно или попадаем на полосу разделения при 0<m<1
       {
         for (uint32_t j = 0; j < weights.size(); ++j)
-          weights[j] = weights[j] + etha * (Y_train[i] * X_train[i + j] - alpha * weights[j] / epochs);
+          weights[j] = weights[j] + etha * (Y_train[i] * X_train[x_offset + j] - alpha * weights[j] / epochs);
         tr_err += 1.f;
-        tr_loss += soft_margin_loss(X_train.data() + x_offset,Y_train[i]);
+        tr_loss += soft_margin_loss(X_train.data() + x_offset, Y_train[i]);
       }
       history_w.push_back(weights);
     }
@@ -96,6 +96,14 @@ void SVM::fit(
     val_errors.push_back(val_err);
     train_loss_epoch.push_back(tr_loss);
     val_loss_epoch.push_back(val_loss);
+  }
+  for (uint32_t i = 0; i < Y_train.size(); ++i)
+  {
+    const uint32_t x_offset = i * (pointDim + 1);
+    const float margin = Y_train[i] * dot(weights.data(), X_train.data() + x_offset, pointDim + 1);
+    if (margin < 0) {
+      finalValue++;
+    }
   }
 }
 

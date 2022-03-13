@@ -25,7 +25,7 @@
 // #############################################################
 
 
-class SVM
+struct SVM
 {
   float etha;
   float alpha;
@@ -41,9 +41,10 @@ class SVM
 
   float hinge_loss(float *x, int y);
   float soft_margin_loss(float *x, int y);
+  uint32_t finalValue = 0;
 
 public:
-  SVM(float etha_ = 0.01, float alpha_ = 0.1, int epochs_ = 200):
+  SVM(float etha_ = 0.01, float alpha_ = 0.1, int epochs_ = 1000):
   etha(etha_), alpha(alpha_), epochs(epochs_) {}
 
   void fit(
