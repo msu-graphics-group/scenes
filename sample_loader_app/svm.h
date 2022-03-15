@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <vector>
 
 #include <cstdint>
@@ -31,8 +32,7 @@ struct SVM
   float alpha;
   int epochs;
 
-  std::vector<float> weights;
-  std::vector<std::vector<float>> history_w;
+  std::array<float, 3> weights;
 
   std::vector<float> train_errors;
   std::vector<float> val_errors;
@@ -54,7 +54,7 @@ public:
     const std::vector<int> &Y_val,
     bool verbose = false);
 
-  std::vector<float> get_weights() const { return weights; }
+  std::array<float, 3> get_weights() const { return weights; }
 
 };
 

@@ -1,6 +1,7 @@
 #include "svm.h"
 
 #include <cstring>
+#include <cassert>
 
 #include <iostream>
 #include <random>
@@ -13,7 +14,9 @@ static void add_bias_feature(std::vector<float> &a, uint32_t axis1)
   std::vector<float> extended(pointsCount * (axis1 + 1));
   for (uint32_t i = 0; i < pointsCount; ++i)
   {
-    memcpy((void*)&extended[i * (axis1 + 1)], (void*)&a[i * axis1], sizeof(float) * axis1);
+    for (uint32_t j = 0; j < axis1; ++j)
+      extended[i * (axis1 + 1) + j] = a[i * axis1 + j];
+    // memcpy((void*)&extended[i * (axis1 + 1)], (void*)&a[i * axis1], sizeof(float) * axis1);
     extended[i * (axis1 + 1) + axis1] = 1;
   }
   a = extended;
@@ -50,11 +53,11 @@ void SVM::fit(
   std::default_random_engine generator;
   std::normal_distribution<float> distribution(0.0, 0.05);
 
-  weights.resize(pointDim + 1);
+  assert(weights.size() == pointDim + 1);
   for (uint32_t i = 0; i < weights.size(); ++i)
     weights[i] = distribution(generator);
 
-  history_w.push_back(weights);
+  // history_w.push_back(weights);
 
   for (int epoch = 0; epoch < epochs; epoch++)
   {
@@ -79,7 +82,7 @@ void SVM::fit(
         tr_err += 1.f;
         tr_loss += soft_margin_loss(X_train.data() + x_offset, Y_train[i]);
       }
-      history_w.push_back(weights);
+      // history_w.push_back(weights);
     }
     for (uint32_t i = 0; i < Y_val.size(); ++i)
     {
@@ -92,10 +95,10 @@ void SVM::fit(
     {
       std::cout << "epoch " << epoch << ". Errors=" << val_err << ". Mean Hinge_loss=" << val_loss << std::endl;
     }
-    train_errors.push_back(tr_err);
-    val_errors.push_back(val_err);
-    train_loss_epoch.push_back(tr_loss);
-    val_loss_epoch.push_back(val_loss);
+    // train_errors.push_back(tr_err);
+    // val_errors.push_back(val_err);
+    // train_loss_epoch.push_back(tr_loss);
+    // val_loss_epoch.push_back(val_loss);
   }
   for (uint32_t i = 0; i < Y_train.size(); ++i)
   {

@@ -3,6 +3,8 @@
 #include "render/image_save.h"
 
 #include "svm.h"
+#include "RT_sampler.h"
+#include "BSP_based_sampler.h"
 #include <set>
 #include <cassert>
 #include <fstream>
@@ -31,7 +33,7 @@ float saturate(float x)
   return std::max(std::min(x, 1.0f), 0.0f);
 }
 
-void get_indices(const std::vector<float> &hamm, const std::vector<uint32_t> ids, const std::vector<float> &line, float x, float y, uint32_t &idx1, uint32_t &idx2)
+void get_indices(const std::vector<float> &hamm, const std::vector<uint32_t> ids, const std::array<float, 3> &line, float x, float y, uint32_t &idx1, uint32_t &idx2)
 {
   idx2 = ids[0];
   for (uint32_t i : ids)
@@ -325,9 +327,43 @@ int main(int argc, char **argv)
     }
   }
 
-  auto image = rayTraceCPU(pRayTracerCPU, WIDTH, HEIGHT, add_samples, radius);
+  // auto image = rayTraceCPU(pRayTracerCPU, WIDTH, HEIGHT, add_samples, radius);
+  std::vector<uint32_t> image;
 
-  saveImageLDR("output_antialiased_svm2.png", image, WIDTH, HEIGHT, 4);
+  BSPBasedSampler<SampleInfo>::Config config;
+  config.width = WIDTH;
+  config.height = HEIGHT;
+  config.windowHalfSize = 1;
+  config.radius = 0.5f;
+  config.additionalSamplesCnt = 4;
+  BSPBasedSampler<SampleInfo> sampler(config);
+  sampler.configure(RTSampler(pRayTracerCPU, WIDTH, HEIGHT));
+  const uint32_t aaSamples = 4;
+  for (uint32_t j = 0; j < HEIGHT; ++j)
+  {
+    for (uint32_t i = 0; i < WIDTH; ++i)
+    {
+      float r = 0, g = 0, b = 0;
+      for (uint32_t y = 0; y < aaSamples; ++y)
+      {
+        for (uint32_t x = 0; x < aaSamples; ++x)
+        {
+          const float x_coord = (float)(x + i * aaSamples) / (aaSamples * WIDTH);
+          const float y_coord = (float)(y + j * aaSamples) / (aaSamples * HEIGHT);
+          SampleInfo sample = sampler.sample(x_coord, y_coord);
+          r += ((sample.color >> 16) & 0xFF);
+          g += ((sample.color >> 8) & 0xFF);
+          b += (sample.color & 0xFF);
+        }
+      }
+      r /= aaSamples * aaSamples;
+      g /= aaSamples * aaSamples;
+      b /= aaSamples * aaSamples;
+      image.push_back(0xFF000000 | ((uint32_t)(r) << 16) | ((uint32_t)(g) << 8) | (uint32_t)b);
+    }
+  }
+
+  saveImageLDR("output_antialiased_bsp.png", image, WIDTH, HEIGHT, 4);
 
   return 0;
 }

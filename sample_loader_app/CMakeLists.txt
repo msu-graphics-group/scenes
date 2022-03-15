@@ -37,7 +37,7 @@ set(RENDER_SRC
         ${CMAKE_SOURCE_DIR}/render/image_save.cpp
         ${CMAKE_SOURCE_DIR}/render/raytracing.cpp)
 
-add_executable(loader_app main.cpp svm.cpp ${SCENE_LOADER_SRC} ${RENDER_SRC})
+add_executable(loader_app main.cpp svm.cpp BSP_based_sampler.cpp ${SCENE_LOADER_SRC} ${RENDER_SRC})
 
 set_property(TARGET loader_app PROPERTY CXX_STANDARD 17)
 
