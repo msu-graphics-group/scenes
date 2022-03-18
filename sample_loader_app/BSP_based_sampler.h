@@ -328,14 +328,14 @@ public:
       if (currentNode->split[0] * x_local + currentNode->split[1] * y_local + currentNode->split[2] >= 0.f)
       {
         if (currentNode->leftChild.index() == 1)
-          return currentNode->leftChild;
+          return std::get<1>(currentNode->leftChild);
         
         currentNode = std::get<0>(currentNode->leftChild).get();
       }
       else
       {
         if (currentNode->rightChild.index() == 1)
-          return currentNode->rightChild;
+          return std::get<1>(currentNode->rightChild);
     
         currentNode = std::get<0>(currentNode->rightChild).get();
       }

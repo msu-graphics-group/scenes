@@ -383,8 +383,8 @@ int main(int argc, char **argv)
   std::mt19937 rng(dev());
   std::uniform_real_distribution<float> uniform(0.0f, 1.0f);
   
-  /*
-  for (uint32_t j = 0; j < (WIDTH*HEIGHT)*10; ++j)
+  
+  for (uint32_t j = 0; j < (WIDTH*HEIGHT); ++j)
   {
     float x = uniform(rng);
     float y = uniform(rng);
@@ -393,8 +393,8 @@ int main(int argc, char **argv)
     float g = uniform(rng);
     float b = uniform(rng);
 
-    sampler.access(x,y).color = uint32_t(r*255.0f) | uint32_t(g*255.0f) << 8 | uint32_t(b*255.0f) << 16;
-  }*/
+    sampler.access(x,y).color = 0xFFFFFFFF; // uint32_t(r*255.0f) | uint32_t(g*255.0f) << 8 | uint32_t(b*255.0f) << 16;
+  }
 
   for (uint32_t j = 0; j < HEIGHT; ++j)
   {
