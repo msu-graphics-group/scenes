@@ -6,6 +6,7 @@
 #include <vector>
 
 #include <cstdint>
+#include <stack>
 
 #include "svm.h"
 
@@ -306,6 +307,79 @@ public:
           return std::get<1>(currentNode->rightChild);
         }
         currentNode = std::get<0>(currentNode->rightChild).get();
+      }
+    }
+  }
+
+  TexType& access(float x, float y)
+  {
+    const uint32_t x_texel = x * config.width;
+    const uint32_t y_texel = y * config.height;
+    const uint32_t texel_id = y_texel * config.width + x_texel;
+    if (specialTexels.count(texel_id) == 0)
+      return singleRayData[texel_id];
+    
+    const float x_local = ((x * config.width - x_texel) - 0.5f) * 2.f * config.radius;
+    const float y_local = ((y * config.height - y_texel) - 0.5f) * 2.f * config.radius;
+
+    BSPNode *currentNode = specialTexels[texel_id].get();
+    while (true)
+    {
+      if (currentNode->split[0] * x_local + currentNode->split[1] * y_local + currentNode->split[2] >= 0.f)
+      {
+        if (currentNode->leftChild.index() == 1)
+          return currentNode->leftChild;
+        
+        currentNode = std::get<0>(currentNode->leftChild).get();
+      }
+      else
+      {
+        if (currentNode->rightChild.index() == 1)
+          return currentNode->rightChild;
+    
+        currentNode = std::get<0>(currentNode->rightChild).get();
+      }
+    }
+  }
+
+  void clear(TexType a_val)
+  {
+    for(uint32_t y = 0; y < config.height; y++) 
+    {
+      for(uint32_t x = 0; x < config.width; x++) 
+      {
+
+        const uint32_t texel_id = y*config.width + x;
+        if (specialTexels.count(texel_id) == 0)
+          singleRayData[texel_id] = a_val;
+        else
+        {
+          std::stack<BSPNode*> nodesToProcess;
+          BSPNode *currentNode = specialTexels[texel_id].get();
+          
+          do 
+          {
+            if(currentNode->leftChild.index() != 1)
+              nodesToProcess.push(std::get<0>(currentNode->leftChild).get());
+            else
+              currentNode->leftChild = a_val;
+
+            if(currentNode->rightChild.index() != 1)
+              nodesToProcess.push(std::get<0>(currentNode->rightChild).get());
+            else
+              currentNode->rightChild = a_val;
+            
+            if(nodesToProcess.empty())
+              currentNode = nullptr;
+            else
+            {
+              currentNode = nodesToProcess.top(); 
+              nodesToProcess.pop();   
+            }
+          } 
+          while(currentNode != nullptr);
+        }
+
       }
     }
   }

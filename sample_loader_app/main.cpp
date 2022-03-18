@@ -9,6 +9,7 @@
 #include <cassert>
 #include <fstream>
 #include <sstream>
+#include <random>
 
 void PlaneHammersley(float *result, int n)
 {
@@ -338,6 +339,7 @@ int main(int argc, char **argv)
   config.additionalSamplesCnt = 4;
   BSPBasedSampler<SampleInfo> sampler(config);
   sampler.configure(RTSampler(pRayTracerCPU, WIDTH, HEIGHT));
+
   const uint32_t aaSamples = 4;
   for (uint32_t j = 0; j < HEIGHT; ++j)
   {
@@ -364,6 +366,61 @@ int main(int argc, char **argv)
   }
 
   saveImageLDR("output_antialiased_bsp.png", image, WIDTH, HEIGHT, 4);
+  
+  // test clear and sampling
+  //
+
+  std::cout << "clear ... " << std::endl;
+  SampleInfo test;
+  test.color = 0;
+  test.objId = 0;
+  sampler.clear(test);
+
+  std::cout << "test sampling/access ... " << std::endl;
+  
+  // Choose a random mean between 1 and 6
+  std::random_device dev;
+  std::mt19937 rng(dev());
+  std::uniform_real_distribution<float> uniform(0.0f, 1.0f);
+  
+  /*
+  for (uint32_t j = 0; j < (WIDTH*HEIGHT)*10; ++j)
+  {
+    float x = uniform(rng);
+    float y = uniform(rng);
+
+    float r = uniform(rng);
+    float g = uniform(rng);
+    float b = uniform(rng);
+
+    sampler.access(x,y).color = uint32_t(r*255.0f) | uint32_t(g*255.0f) << 8 | uint32_t(b*255.0f) << 16;
+  }*/
+
+  for (uint32_t j = 0; j < HEIGHT; ++j)
+  {
+    for (uint32_t i = 0; i < WIDTH; ++i)
+    {
+      float r = 0, g = 0, b = 0;
+      for (uint32_t y = 0; y < aaSamples; ++y)
+      {
+        for (uint32_t x = 0; x < aaSamples; ++x)
+        {
+          const float x_coord = (float)(x + i * aaSamples) / (aaSamples * WIDTH);
+          const float y_coord = (float)(y + j * aaSamples) / (aaSamples * HEIGHT);
+          SampleInfo sample = sampler.sample(x_coord, y_coord);
+          r += ((sample.color >> 16) & 0xFF);
+          g += ((sample.color >> 8) & 0xFF);
+          b += (sample.color & 0xFF);
+        }
+      }
+      r /= aaSamples * aaSamples;
+      g /= aaSamples * aaSamples;
+      b /= aaSamples * aaSamples;
+      image[j*WIDTH+i] = (0xFF000000 | ((uint32_t)(r) << 16) | ((uint32_t)(g) << 8) | (uint32_t)b);
+    }
+  }
+
+  saveImageLDR("output_antialiased_bsp_sampled.png", image, WIDTH, HEIGHT, 4);
 
   return 0;
 }
