@@ -33,13 +33,17 @@ class BSPBasedSampler
   // Left means that dot(point, split) >= 0 for the point in left child
   struct BSPNode
   {
-    std::variant<std::unique_ptr<BSPNode>, TexType> leftChild;
-    std::variant<std::unique_ptr<BSPNode>, TexType> rightChild;
+    uint32_t isleftLeaf:1;
+    uint32_t leftIdx:31;
+    uint32_t isRightLeaf:1;
+    uint32_t rightIdx:31;
     Line split;
   };
-  std::unordered_map<uint32_t, std::unique_ptr<BSPNode>> specialTexels;
+  std::vector<BSPNode> nodesCollection;
+  std::vector<TexType> subtexelsCollection;
+  std::unordered_map<uint32_t, uint32_t> specialTexels;
 
-  std::unique_ptr<BSPNode> construct_bsp(std::vector<Line> lines, const std::vector<uint32_t> &labels, const std::vector<float> &samples, const std::vector<TexType> &texData)
+  uint32_t construct_bsp(std::vector<Line> lines, const std::vector<uint32_t> &labels, const std::vector<float> &samples, const std::vector<TexType> &texData)
   {
     uint32_t bestLineIdx = 0;
     uint32_t bestLineScore = config.additionalSamplesCnt + 1; // Amount of wrong classified samples (wrong mean that major amount of samples with the same label are on another side of the line)
@@ -154,26 +158,32 @@ class BSPBasedSampler
       }
     }
 
-    std::unique_ptr<BSPNode> root = std::make_unique<BSPNode>();
-    root->split = line;
+    uint32_t nodeIdx = nodesCollection.size();
+    nodesCollection.resize(nodesCollection.size() + 1);
+    BSPNode &root = nodesCollection.back();
+    root.split = line;
     if (leftIsLeaf || leftLines.empty())
     {
-      root->leftChild = texData[leftLabels[0]];
+      root.isleftLeaf = 1;
+      root.leftIdx = leftLabels[0] + subtexelsCollection.size();
     }
     else
     {
-      root->leftChild = construct_bsp(leftLines, leftLabels, leftSamples, texData);
+      root.isleftLeaf = 0;
+      root.leftIdx = construct_bsp(leftLines, leftLabels, leftSamples, texData);
     }
 
     if (rightIsLeaf || rightLines.empty())
     {
-      root->rightChild = texData[rightLabels[0]];
+      root.isRightLeaf = 1;
+      root.rightIdx = rightLabels[0] + subtexelsCollection.size();
     }
     else
     {
-      root->rightChild = construct_bsp(rightLines, rightLabels, rightSamples, texData);
+      root.isRightLeaf = 0;
+      root.rightIdx = construct_bsp(rightLines, rightLabels, rightSamples, texData);
     }
-    return root;
+    return nodeIdx;
   }
 
 public:
@@ -319,7 +329,10 @@ public:
         }
       }
       if (!lines.empty())
+      {
         specialTexels[texel_idx] = construct_bsp(lines, labels, samplesPositions, referenceSamples);
+        subtexelsCollection.insert(subtexelsCollection.end(), referenceSamples.begin(), referenceSamples.end());
+      }
     }
   }
 
@@ -335,24 +348,25 @@ public:
     const float x_local = ((x * config.width - x_texel) - 0.5f) * 2.f * config.radius;
     const float y_local = ((y * config.height - y_texel) - 0.5f) * 2.f * config.radius;
 
-    BSPNode *currentNode = specialTexels[texel_id].get();
+    uint32_t currentNode = specialTexels[texel_id];
     while (true)
     {
-      if (currentNode->split[0] * x_local + currentNode->split[1] * y_local + currentNode->split[2] >= 0.f)
+      const BSPNode &node = nodesCollection[currentNode];
+      if (node.split[0] * x_local + node.split[1] * y_local + node.split[2] >= 0.f)
       {
-        if (currentNode->leftChild.index() == 1)
+        if (node.isleftLeaf)
         {
-          return std::get<1>(currentNode->leftChild);
+          return subtexelsCollection[node.leftIdx];
         }
-        currentNode = std::get<0>(currentNode->leftChild).get();
+        currentNode = node.leftIdx;
       }
       else
       {
-        if (currentNode->rightChild.index() == 1)
+        if (node.isRightLeaf)
         {
-          return std::get<1>(currentNode->rightChild);
+          return subtexelsCollection[node.rightIdx];
         }
-        currentNode = std::get<0>(currentNode->rightChild).get();
+        currentNode = node.rightIdx;
       }
     }
   }
@@ -368,22 +382,25 @@ public:
     const float x_local = ((x * config.width - x_texel) - 0.5f) * 2.f * config.radius;
     const float y_local = ((y * config.height - y_texel) - 0.5f) * 2.f * config.radius;
 
-    BSPNode *currentNode = specialTexels[texel_id].get();
+    uint32_t currentNode = specialTexels[texel_id];
     while (true)
     {
-      if (currentNode->split[0] * x_local + currentNode->split[1] * y_local + currentNode->split[2] >= 0.f)
+      const BSPNode &node = nodesCollection[currentNode];
+      if (node.split[0] * x_local + node.split[1] * y_local + node.split[2] >= 0.f)
       {
-        if (currentNode->leftChild.index() == 1)
-          return std::get<1>(currentNode->leftChild);
-        
-        currentNode = std::get<0>(currentNode->leftChild).get();
+        if (node.isleftLeaf)
+        {
+          return subtexelsCollection[node.leftIdx];
+        }
+        currentNode = node.leftIdx;
       }
       else
       {
-        if (currentNode->rightChild.index() == 1)
-          return std::get<1>(currentNode->rightChild);
-    
-        currentNode = std::get<0>(currentNode->rightChild).get();
+        if (node.isRightLeaf)
+        {
+          return subtexelsCollection[node.rightIdx];
+        }
+        currentNode = node.rightIdx;
       }
     }
   }
@@ -400,30 +417,31 @@ public:
           singleRayData[texel_id] = a_val;
         else
         {
-          std::stack<BSPNode*> nodesToProcess;
-          BSPNode *currentNode = specialTexels[texel_id].get();
+          std::stack<uint32_t> nodesToProcess;
+          uint32_t currentNode = specialTexels[texel_id];
           
           do 
           {
-            if(currentNode->leftChild.index() != 1)
-              nodesToProcess.push(std::get<0>(currentNode->leftChild).get());
+            BSPNode &node = nodesCollection[currentNode];
+            if (!node.isleftLeaf)
+              nodesToProcess.push(node.leftIdx);
             else
-              currentNode->leftChild = a_val;
+              subtexelsCollection[node.leftIdx] = a_val;
 
-            if(currentNode->rightChild.index() != 1)
-              nodesToProcess.push(std::get<0>(currentNode->rightChild).get());
+            if (!node.isRightLeaf)
+              nodesToProcess.push(node.rightIdx);
             else
-              currentNode->rightChild = a_val;
+              subtexelsCollection[node.rightIdx] = a_val;
             
             if(nodesToProcess.empty())
-              currentNode = nullptr;
+              currentNode = 0xFFFFFFFF;
             else
             {
               currentNode = nodesToProcess.top(); 
               nodesToProcess.pop();   
             }
           } 
-          while(currentNode != nullptr);
+          while(currentNode != 0xFFFFFFFF);
         }
 
       }
