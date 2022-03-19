@@ -41,28 +41,6 @@ class BSPBasedSampler
 
   std::unique_ptr<BSPNode> construct_bsp(std::vector<Line> lines, const std::vector<uint32_t> &labels, const std::vector<float> &samples, const std::vector<TexType> &texData)
   {
-    // Remove lines which don't split anything
-    for (int i = lines.size() - 1; i >= 0; --i)
-    {
-      uint32_t leftCnt = 0;
-      uint32_t rightCnt = 0;
-      for (uint32_t j = 0; j < samples.size(); j += 2)
-      {
-        if (lines[i][0] * samples[j] + lines[i][1] * samples[j + 1] + lines[i][2] > 0.0f)
-        {
-          leftCnt++;
-        }
-        else
-        {
-          rightCnt++;
-        }
-      }
-      if (leftCnt == 0 || rightCnt == 0)
-      {
-        lines.erase(lines.begin() + i);
-      }
-    }
-
     uint32_t bestLineIdx = 0;
     uint32_t bestLineScore = config.additionalSamplesCnt + 1; // Amount of wrong classified samples (wrong mean that major amount of samples with the same label are on another side of the line)
     for (uint32_t lineId = 0; lineId < lines.size() && bestLineScore > 0; ++lineId)
@@ -130,24 +108,70 @@ class BSPBasedSampler
       }
     }
 
+    std::vector<Line> leftLines = lines;
+
+    for (int i = leftLines.size() - 1; i >= 0; --i)
+    {
+      uint32_t leftCnt = 0;
+      uint32_t rightCnt = 0;
+      for (uint32_t j = 0; j < leftSamples.size(); j += 2)
+      {
+        if (leftLines[i][0] * leftSamples[j] + leftLines[i][1] * leftSamples[j + 1] + leftLines[i][2] > 0.0f)
+        {
+          leftCnt++;
+        }
+        else
+        {
+          rightCnt++;
+        }
+      }
+      if (leftCnt == 0 || rightCnt == 0)
+      {
+        leftLines.erase(leftLines.begin() + i);
+      }
+    }
+
+    std::vector<Line> rightLines = lines;
+
+    for (int i = rightLines.size() - 1; i >= 0; --i)
+    {
+      uint32_t leftCnt = 0;
+      uint32_t rightCnt = 0;
+      for (uint32_t j = 0; j < rightSamples.size(); j += 2)
+      {
+        if (rightLines[i][0] * rightSamples[j] + rightLines[i][1] * rightSamples[j + 1] + rightLines[i][2] > 0.0f)
+        {
+          leftCnt++;
+        }
+        else
+        {
+          rightCnt++;
+        }
+      }
+      if (leftCnt == 0 || rightCnt == 0)
+      {
+        rightLines.erase(rightLines.begin() + i);
+      }
+    }
+
     std::unique_ptr<BSPNode> root = std::make_unique<BSPNode>();
     root->split = line;
-    if (leftIsLeaf)
+    if (leftIsLeaf || leftLines.empty())
     {
       root->leftChild = texData[leftLabels[0]];
     }
     else
     {
-      root->leftChild = construct_bsp(lines, leftLabels, leftSamples, texData);
+      root->leftChild = construct_bsp(leftLines, leftLabels, leftSamples, texData);
     }
 
-    if (rightIsLeaf)
+    if (rightIsLeaf || rightLines.empty())
     {
       root->rightChild = texData[rightLabels[0]];
     }
     else
     {
-      root->rightChild = construct_bsp(lines, rightLabels, rightSamples, texData);
+      root->rightChild = construct_bsp(rightLines, rightLabels, rightSamples, texData);
     }
     return root;
   }
@@ -175,9 +199,9 @@ public:
       for (int j = 0; j < config.height; ++j) {
         bool needResample = false;
         const TexType texel = singleRayData[i * config.width + j];
-        for (int x = std::max(i - 1, 0); x <= std::min(i + 1, (int)config.width) && !needResample; ++x)
+        for (int x = std::max(i - 1, 0); x <= std::min(i + 1, (int)config.width - 1) && !needResample; ++x)
         {
-          for (int y = std::max(j - 1, 0); y <= std::min(j + 1, (int)config.height) && !needResample; ++y)
+          for (int y = std::max(j - 1, 0); y <= std::min(j + 1, (int)config.height - 1) && !needResample; ++y)
           {
             needResample = !close_tex_data(singleRayData[y * config.width + x], texel);
           }
@@ -216,7 +240,7 @@ public:
         {
           if (close_tex_data(referenceSamples[j], samples[i]))
           {
-            labels[i] = j;
+            labels.push_back(j);
             refFound = true;
             break;
           }
@@ -273,7 +297,29 @@ public:
 
       std::vector<float> samplesPositions(2, 0);
       samplesPositions.insert(samplesPositions.end(), hammSamples.begin(), hammSamples.end());
-      specialTexels[texel_idx] = construct_bsp(lines, labels, samplesPositions, referenceSamples);
+      // Remove lines which don't split anything
+      for (int i = lines.size() - 1; i >= 0; --i)
+      {
+        uint32_t leftCnt = 0;
+        uint32_t rightCnt = 0;
+        for (uint32_t j = 0; j < samples.size(); j += 2)
+        {
+          if (lines[i][0] * samplesPositions[j] + lines[i][1] * samplesPositions[j + 1] + lines[i][2] > 0.0f)
+          {
+            leftCnt++;
+          }
+          else
+          {
+            rightCnt++;
+          }
+        }
+        if (leftCnt == 0 || rightCnt == 0)
+        {
+          lines.erase(lines.begin() + i);
+        }
+      }
+      if (!lines.empty())
+        specialTexels[texel_idx] = construct_bsp(lines, labels, samplesPositions, referenceSamples);
     }
   }
 
