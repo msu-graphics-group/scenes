@@ -3,7 +3,7 @@
 std::vector<float> gen_hammersley(uint32_t cnt, float radius)
 {
   std::vector<float> values(cnt * 2);
-  for (int k = 0; k < cnt; k++)
+  for (uint32_t k = 0; k < cnt; k++)
   {
     float u = 0;
     int kk = k;
