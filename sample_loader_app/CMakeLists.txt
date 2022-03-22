@@ -44,7 +44,7 @@ set(RENDER_SRC
 
 set(HYDRA_SRC HydraRngUtils.cpp)
 
-add_library(hydra_bsp_image SHARED main.cpp svm.cpp BSP_based_sampler.cpp ${SCENE_LOADER_SRC} ${RENDER_SRC} ${HYDRA_SRC})	
+add_library(hydra_bsp_image SHARED svm.cpp BSP_based_sampler.cpp ${SCENE_LOADER_SRC} ${RENDER_SRC} ${HYDRA_SRC})	
 
 #add_executable(loader_app main.cpp svm.cpp BSP_based_sampler.cpp ${SCENE_LOADER_SRC} ${RENDER_SRC} ${HYDRA_SRC})
 

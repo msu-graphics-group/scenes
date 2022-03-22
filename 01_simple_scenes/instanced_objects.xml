@@ -95,7 +95,7 @@
   </light>
 </lights_lib>
 <cam_lib>
-  <camera id="0" name="my camera" type="uvn">
+  <camera id="0" name="my camera" type="uvn" integrator_iters="4" cpu_plugin="1" cpu_plugin_dll="/home/frol/PROG/msu-graphics-group/scenes/sample_loader_app/libhydra_bsp_image.so">
     <fov>45</fov>
     <nearClipPlane>0.01</nearClipPlane>
     <farClipPlane>100.0</farClipPlane>
@@ -115,7 +115,7 @@
     <qmc_variant>7</qmc_variant>
     <trace_depth>8</trace_depth>
     <diff_trace_depth>3</diff_trace_depth>
-    <maxRaysPerPixel>1024</maxRaysPerPixel>
+    <maxRaysPerPixel>256</maxRaysPerPixel>
   </render_settings>
 </render_lib>
 <scenes>

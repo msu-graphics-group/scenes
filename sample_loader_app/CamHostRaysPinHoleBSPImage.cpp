@@ -128,7 +128,7 @@ void PinHoleBSPImageAccum::AddSamplesContribution(float* out_color4f, const floa
     const uint32_t packedIndex = myAsInt(color.w);
     const int x      = (packedIndex & 0x0000FFFF);         ///<! extract x position from color.w
     const int y      = (packedIndex & 0xFFFF0000) >> 16;   ///<! extract y position from color.w
-    const int offset = y*a_width + x;
+    const int offset = (a_height-y-1)*a_width + x;
 
     if (x >= 0 && y >= 0 && x < int(a_width) && y < int(a_height))
     {
