@@ -121,11 +121,12 @@ bool RayTracer::LoadScene(const std::string& path)
     float aspect   = float(m_width) / float(m_height);
     auto proj      = perspectiveMatrix(cam.fov, aspect, cam.nearPlane, cam.farPlane);
     auto worldView = lookAt(float3(cam.pos), float3(cam.lookAt), float3(cam.up));
-    m_invProjView  = LiteMath::inverse4x4(proj * transpose(inverse4x4(worldView)));
+    m_invProjView  = LiteMath::inverse4x4(proj); // LiteMath::inverse4x4(proj * transpose(inverse4x4(worldView)));
     m_worldViewInv = inverse4x4(worldView);
 
     break; // take first cam
   }
+  
 
   m_pAccelStruct->ClearGeom();
   for(auto meshPath : scene.MeshFiles())

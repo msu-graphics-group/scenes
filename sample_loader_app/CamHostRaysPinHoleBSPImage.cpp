@@ -102,6 +102,13 @@ public:
         m_projInv(i,j) = a_projInvMatrix[j*4+i];             // assume column major !
     //memcpy(&m_projInv, a_projInvMatrix, sizeof(float4x4)); // actually same but, not safe if our matrices and Hydra matrices will have different layout
 
+    //std::cout << "[PinHoleBSPImageAccum] m_projInv: " << std::endl;
+    //for(int i=0;i<4;i++) {
+    //  for(int j=0;j<4;j++)
+    //    cout << m_projInv(i,j) << " ";
+    //  cout << std::endl;
+    //}
+
     BSPImage4f::Config config;
     config.width          = a_width;
     config.height         = a_height;
