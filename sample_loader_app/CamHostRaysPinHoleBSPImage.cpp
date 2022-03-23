@@ -30,6 +30,8 @@ using LiteMath::float2;
 #include <sstream>
 #include <random>
 
+#include "render/image_save.h"
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -75,15 +77,26 @@ public:
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+struct PipeThrough
+{
+  float x = 0.0f;
+  float y = 0.0f;
+  uint32_t packedIndex = 0;
+};
+
 class PinHoleBSPImageAccum : public IHostRaysAPI
 {
 public:
   PinHoleBSPImageAccum() { hr_qmc::init(table); m_globalCounter = 0; }
   
+  std::string outImagePath = "";
+
   void SetParameters(int a_width, int a_height, const float a_projInvMatrix[16], const wchar_t* a_camNodeText) override
   {
     m_fwidth  = float(a_width);
     m_fheight = float(a_height);
+    m_width   = a_width;
+    m_height  = a_height;
     for(int i=0;i<4;i++)
       for(int j=0;j<4;j++)
         m_projInv(i,j) = a_projInvMatrix[j*4+i];             // assume column major !
@@ -98,6 +111,7 @@ public:
     m_pFrameBuffer = std::make_unique<BSPImage4f>(config);
 
     std::string scenePath = "/home/frol/PROG/msu-graphics-group/scenes/01_simple_scenes/instanced_objects.xml"; //#TODO: pass scene path here!
+    outImagePath          = "/home/frol/PROG/msu-graphics-group/scenes/sample_loader_app/z_out_bsp.png";
     
     std::cout << "[PinHoleBSP]: loading scene from " << scenePath.c_str() << std::endl;
     auto pRayTracerCPU = std::make_shared<RayTracer>(a_width, a_height);
@@ -114,6 +128,7 @@ public:
   void FinishRendering() override;
   
   std::unique_ptr<BSPImage4f> m_pFrameBuffer = nullptr;
+  std::vector<PipeThrough>    m_pipeline[HOST_RAYS_PIPELINE_LENGTH];
 
   unsigned int table[hr_qmc::QRNG_DIMENSIONS][hr_qmc::QRNG_RESOLUTION];
   unsigned int m_globalCounter = 0;
@@ -121,6 +136,10 @@ public:
   float m_fwidth  = 1024.0f;
   float m_fheight = 1024.0f;
   float4x4 m_projInv;
+
+  uint32_t m_width  = 1024;
+  uint32_t m_height = 1024;
+  float   m_spp    = 0;
 
   float FOCAL_PLANE_DIST = 10.0f;
   float DOF_LENS_RADIUS  = 0.0f;
@@ -144,6 +163,14 @@ LiteMath::float3 EyeRayDir(float x, float y, float w, float h, LiteMath::float4x
 
 void PinHoleBSPImageAccum::MakeRaysBlock(RayPart1* out_rayPosAndNear, RayPart2* out_rayDirAndFar, size_t in_blockSize, int passId)
 {
+  if(m_pipeline[0].size() == 0)
+  {
+    for(int i=0;i<HOST_RAYS_PIPELINE_LENGTH;i++)
+    m_pipeline[i].resize(in_blockSize);
+  }
+
+  const int putID = passId % HOST_RAYS_PIPELINE_LENGTH;
+
   #pragma omp parallel for
   for(int i=0;i<int(in_blockSize);i++)
   {
@@ -181,9 +208,15 @@ void PinHoleBSPImageAccum::MakeRaysBlock(RayPart1* out_rayPosAndNear, RayPart2* 
     p2.direction[1] = ray_dir.y;
     p2.direction[2] = ray_dir.z;
     p2.dummy        = 0.0f;
+
+    PipeThrough pipeData;
+    pipeData.x = rndX;
+    pipeData.y = rndY;
+    pipeData.packedIndex = p1.xyPosPacked; 
     
     out_rayPosAndNear[i] = p1;
     out_rayDirAndFar [i] = p2;
+    m_pipeline[putID][i] = pipeData;
   }
 
   //std::this_thread::sleep_for(std::chrono::milliseconds(50)); // test big delay
@@ -193,6 +226,8 @@ void PinHoleBSPImageAccum::MakeRaysBlock(RayPart1* out_rayPosAndNear, RayPart2* 
 
 void PinHoleBSPImageAccum::AddSamplesContribution(float* out_color4f, const float* colors4f, size_t in_blockSize, uint32_t a_width, uint32_t a_height, int passId)
 {
+  const int takeID = (passId + HOST_RAYS_PIPELINE_LENGTH - 2) % HOST_RAYS_PIPELINE_LENGTH;
+
   float4*       out_color = (float4*)out_color4f;
   const float4* colors    = (const float4*)colors4f;
   
@@ -200,6 +235,23 @@ void PinHoleBSPImageAccum::AddSamplesContribution(float* out_color4f, const floa
   {
     const auto color = colors[i];
     const uint32_t packedIndex = myAsInt(color.w);
+
+    const PipeThrough& passData = m_pipeline[takeID][i];
+    if(passData.packedIndex != packedIndex)
+    {
+      std::cout << "warning, bad packed index: " << i << " : " << passData.packedIndex << " != " << packedIndex << std::endl; 
+      std::cout.flush();
+      continue;
+      //assert(passData.packedIndex == packedIndex);
+    }
+
+    auto& subPixel = m_pFrameBuffer->access(passData.x, passData.y);
+    subPixel.color[0] += color[0];
+    subPixel.color[1] += color[1];
+    subPixel.color[2] += color[2];
+
+    //assert(passData.packedIndex == packedIndex);           ///<! check that we actually took data from 'm_pipeline' for right ray
+
     const int x      = (packedIndex & 0x0000FFFF);         ///<! extract x position from color.w
     const int y      = (packedIndex & 0xFFFF0000) >> 16;   ///<! extract y position from color.w
     const int offset = (a_height-y-1)*a_width + x;
@@ -211,11 +263,56 @@ void PinHoleBSPImageAccum::AddSamplesContribution(float* out_color4f, const floa
       out_color[offset].z += color.z;
     }
   }
+
+  m_spp += float(in_blockSize) / float(a_width*a_height);
 }
 
 void PinHoleBSPImageAccum::FinishRendering()
 { 
-  std::cout << "PinHoleBSPImageAccum::FinishRendering is called" << std::endl; 
+  std::cout << "[PinHoleBSPImageAccum]::FinishRendering is called" << std::endl; 
+
+  std::vector<uint32_t> imageLDR(m_width*m_height);
+
+  const float invSPP = 1.0f/m_spp;
+
+  const uint32_t aaSamples = 4;
+  for (uint32_t j = 0; j < m_width; ++j)
+  {
+    for (uint32_t i = 0; i < m_height; ++i)
+    {
+      float r = 0, g = 0, b = 0;
+      for (uint32_t y = 0; y < aaSamples; ++y)
+      {
+        for (uint32_t x = 0; x < aaSamples; ++x)
+        {
+          const float x_coord    = (float)(x + j * aaSamples) / (aaSamples * m_width);
+          const float y_coord    = (float)(y + i * aaSamples) / (aaSamples * m_height);
+          SubPixelElement sample = m_pFrameBuffer->sample(x_coord, y_coord);
+          
+          // perform tone mapping for subixel
+          //
+          sample.color[0] = std::min(sample.color[0]*invSPP, 1.0f);
+          sample.color[1] = std::min(sample.color[1]*invSPP, 1.0f);
+          sample.color[2] = std::min(sample.color[2]*invSPP, 1.0f);
+          
+          r += sample.color[0];
+          g += sample.color[1];
+          b += sample.color[2];
+        }
+      }
+      r /= (aaSamples * aaSamples);
+      g /= (aaSamples * aaSamples);
+      b /= (aaSamples * aaSamples);
+      
+      const float r1 = std::pow(r, 1.0f/2.2f);
+      const float g1 = std::pow(g, 1.0f/2.2f);
+      const float b1 = std::pow(b, 1.0f/2.2f);
+
+      imageLDR[i*m_width+j] = 0xFF000000 | (uint32_t(r1*255.0f) << 0) | (uint32_t(g1*255.0f) << 8) | (uint32_t(b1*255.0f) << 16);
+    }
+  }
+
+  saveImageLDR(outImagePath.c_str(), imageLDR, m_width, m_height, 4);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
