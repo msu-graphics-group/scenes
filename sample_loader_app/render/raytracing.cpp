@@ -3,6 +3,32 @@
 #include "../loader/hydraxml.h"
 #include "../loader/cmesh.h"
 
+////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////
+
+static inline float3 mul3x3(float4x4 m, float3 v)
+{ 
+  return to_float3(m*to_float4(v, 0.0f));
+}
+
+static inline float3 mul4x3(float4x4 m, float3 v)
+{
+  return to_float3(m*to_float4(v, 1.0f));
+}
+
+static inline void transform_ray3f(float4x4 a_mWorldViewInv, float3* ray_pos, float3* ray_dir) 
+{
+  float3 pos  = mul4x3(a_mWorldViewInv, (*ray_pos));
+  float3 pos2 = mul4x3(a_mWorldViewInv, ((*ray_pos) + 100.0f*(*ray_dir)));
+
+  float3 diff = pos2 - pos;
+
+  (*ray_pos)  = pos;
+  (*ray_dir)  = normalize(diff);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////
 
 void RayTracer::CastSingleRay(uint32_t tidX, uint32_t tidY, uint32_t* out_color)
 {
@@ -37,8 +63,12 @@ void RayTracer::CastSingleRayForSurfaceId(uint32_t tidX, uint32_t tidY, float x_
 
 void RayTracer::kernel_InitEyeRay(float tidX, float tidY, LiteMath::float4* rayPosAndNear, LiteMath::float4* rayDirAndFar)
 {
-  const LiteMath::float3 rayDir  = EyeRayDir(tidX, tidY, float(m_width), float(m_height), m_invProjView);
-  *rayPosAndNear = to_float4(m_camPos, 1.0f);
+  LiteMath::float3 rayDir = EyeRayDir(tidX, tidY, float(m_width), float(m_height), m_invProjView); 
+  LiteMath::float3 rayPos = float3(0,0,0);
+
+  transform_ray3f(m_worldViewInv, &rayPos, &rayDir);
+
+  *rayPosAndNear = to_float4(rayPos, 0.0f);
   *rayDirAndFar  = to_float4(rayDir, FLT_MAX);
 }
 
@@ -91,8 +121,8 @@ bool RayTracer::LoadScene(const std::string& path)
     float aspect   = float(m_width) / float(m_height);
     auto proj      = perspectiveMatrix(cam.fov, aspect, cam.nearPlane, cam.farPlane);
     auto worldView = lookAt(float3(cam.pos), float3(cam.lookAt), float3(cam.up));
-    m_invProjView = LiteMath::inverse4x4(proj * transpose(inverse4x4(worldView)));
-    m_camPos = float3(cam.pos);
+    m_invProjView  = LiteMath::inverse4x4(proj * transpose(inverse4x4(worldView)));
+    m_worldViewInv = inverse4x4(worldView);
 
     break; // take first cam
   }

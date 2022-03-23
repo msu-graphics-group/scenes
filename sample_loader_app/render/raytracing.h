@@ -36,8 +36,8 @@ protected:
   uint32_t m_width;
   uint32_t m_height;
 
-  LiteMath::float3   m_camPos;
   LiteMath::float4x4 m_invProjView;
+  LiteMath::float4x4 m_worldViewInv;
 
   std::shared_ptr<ISceneObject> m_pAccelStruct;
 
