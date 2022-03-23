@@ -21,6 +21,60 @@ using LiteMath::float2;
 
 #include "HydraRngUtils.h"
 
+#include "svm.h"
+#include "RT_sampler.h"
+#include "BSP_based_sampler.h"
+#include <set>
+#include <cassert>
+#include <fstream>
+#include <sstream>
+#include <random>
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+struct SubPixelElement // can process as float4 in some cases
+{
+  float    color[3] = {};
+  uint32_t objId    = uint32_t(0xFFFFFFFF);
+};
+
+static inline bool close_tex_data(SubPixelElement a, SubPixelElement b)
+{
+  return a.objId == b.objId;
+}
+
+using BSPImage4f = BSPBasedSampler<SubPixelElement>;
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+class ZeroColorRTSampler
+{
+  std::shared_ptr<RayTracer> tracer;
+  uint32_t width, height;
+public:
+  ZeroColorRTSampler(std::shared_ptr<RayTracer> tr, uint32_t w, uint32_t h) : tracer(tr), width(w), height(h) {}
+
+  SubPixelElement sample(float x, float y) const
+  {
+    SubPixelElement sample;
+    const uint32_t x_texel = uint32_t(x) * width;
+    const uint32_t y_texel = uint32_t(y) * height;
+    tracer->CastSingleRayForSurfaceId(x_texel, y_texel, x * width - x_texel, y * width - y_texel, &sample.objId);
+    return sample;
+  }
+
+  SubPixelElement fetch(uint32_t x, uint32_t y) const
+  {
+    SubPixelElement sample;
+    tracer->CastSingleRayForSurfaceId(x, y, 0, 0, &sample.objId);
+    return sample;
+  }
+};
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 class PinHoleBSPImageAccum : public IHostRaysAPI
 {
 public:
@@ -30,16 +84,36 @@ public:
   {
     m_fwidth  = float(a_width);
     m_fheight = float(a_height);
-    //for(int i=0;i<4;i++)
-    //  for(int j=0;j<4;j++)
-    //    m_projInv(i,j) = a_projInvMatrix[j*4+i]; // assume column major ?
-    memcpy(&m_projInv, a_projInvMatrix, sizeof(float4x4));
+    for(int i=0;i<4;i++)
+      for(int j=0;j<4;j++)
+        m_projInv(i,j) = a_projInvMatrix[j*4+i];             // assume column major !
+    //memcpy(&m_projInv, a_projInvMatrix, sizeof(float4x4)); // actually same but, not safe if our matrices and Hydra matrices will have different layout
+
+    BSPImage4f::Config config;
+    config.width          = a_width;
+    config.height         = a_height;
+    config.windowHalfSize = 1;
+    config.radius         = 0.5f;
+    config.additionalSamplesCnt = 4;
+    m_pFrameBuffer = std::make_unique<BSPImage4f>(config);
+
+    std::string scenePath = "/home/frol/PROG/msu-graphics-group/scenes/01_simple_scenes/instanced_objects.xml"; //#TODO: pass scene path here!
+    
+    std::cout << "[PinHoleBSP]: loading scene from " << scenePath.c_str() << std::endl;
+    auto pRayTracerCPU = std::make_shared<RayTracer>(a_width, a_height);
+    auto loaded = pRayTracerCPU->LoadScene(scenePath.c_str()); 
+    if(!loaded)
+      std::cout << "[PinHoleBSP]: can't load scene from " << scenePath.c_str() << std::endl;
+
+    std::cout << "[PinHoleBSP]: constructing BSPImage ... " << std::endl;
+    m_pFrameBuffer->configure(ZeroColorRTSampler(pRayTracerCPU, a_width, a_height));
   }
 
   void MakeRaysBlock(RayPart1* out_rayPosAndNear, RayPart2* out_rayDirAndFar, size_t in_blockSize, int passId) override;
   void AddSamplesContribution(float* out_color4f, const float* colors4f, size_t in_blockSize, uint32_t a_width, uint32_t a_height, int passId) override;
   void FinishRendering() override;
-
+  
+  std::unique_ptr<BSPImage4f> m_pFrameBuffer = nullptr;
 
   unsigned int table[hr_qmc::QRNG_DIMENSIONS][hr_qmc::QRNG_RESOLUTION];
   unsigned int m_globalCounter = 0;

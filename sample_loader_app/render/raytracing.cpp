@@ -28,11 +28,17 @@ void RayTracer::CastSingleRay(uint32_t tidX, uint32_t tidY, float x_offset, floa
   kernel_RayTrace(0, 0, &rayPosAndNear, &rayDirAndFar, out_sample);
 }
 
+void RayTracer::CastSingleRayForSurfaceId(uint32_t tidX, uint32_t tidY, float x_offset, float y_offset, uint32_t* out_surfaceId)
+{
+  LiteMath::float4 rayPosAndNear, rayDirAndFar;
+  kernel_InitEyeRay(float(tidX) + x_offset, float(tidY) + y_offset, &rayPosAndNear, &rayDirAndFar);
+  kernel_RayTraceID(tidX, tidY, &rayPosAndNear, &rayDirAndFar, out_surfaceId);
+}
+
 void RayTracer::kernel_InitEyeRay(float tidX, float tidY, LiteMath::float4* rayPosAndNear, LiteMath::float4* rayDirAndFar)
 {
-  *rayPosAndNear = to_float4(m_camPos, 1.0f);
-  
   const LiteMath::float3 rayDir  = EyeRayDir(tidX, tidY, float(m_width), float(m_height), m_invProjView);
+  *rayPosAndNear = to_float4(m_camPos, 1.0f);
   *rayDirAndFar  = to_float4(rayDir, FLT_MAX);
 }
 
@@ -58,6 +64,16 @@ void RayTracer::kernel_RayTrace(uint32_t tidX, uint32_t tidY, const LiteMath::fl
 
   out_sample[tidY * m_width + tidX].color = m_palette[hit.instId % palette_size];
   out_sample[tidY * m_width + tidX].objId = (hit.instId << 16) | hit.geomId;
+}
+
+void RayTracer::kernel_RayTraceID(uint32_t tidX, uint32_t tidY, const LiteMath::float4* rayPosAndNear, const LiteMath::float4* rayDirAndFar, uint32_t* out_surfId)
+{
+  const LiteMath::float4 rayPos = *rayPosAndNear;
+  const LiteMath::float4 rayDir = *rayDirAndFar ;
+
+  CRT_Hit hit = m_pAccelStruct->RayQuery_NearestHit(rayPos, rayDir);
+  //out_surfId[tidY * m_width + tidX] = (hit.geomId << 24) | (hit.instId & 0x00FFFFFF);
+  out_surfId[0] = (hit.geomId << 24) | (hit.instId & 0x00FFFFFF);
 }
 
 

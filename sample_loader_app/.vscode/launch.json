@@ -1,0 +1,73 @@
+{
+    // Используйте IntelliSense, чтобы узнать о возможных атрибутах.
+    // Наведите указатель мыши, чтобы просмотреть описания существующих атрибутов.
+    // Для получения дополнительной информации посетите: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name"   : "Launch",
+            "type"   : "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/loader_app",
+            "args"   : ["-add_samples", "16", "-radius", "0.5"],
+            "stopAtEntry": false,
+            "cwd"    : "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        
+        {
+            "name": "(gdb) Launch",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/loader_app",
+            "args": ["-add_samples", "16", "-radius", "0.5"],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+
+        {
+            "name": "Run dll under hydra",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "/home/frol/hydra/hydra",
+            "args": ["-inputlib", "/home/frol/PROG/msu-graphics-group/scenes/01_simple_scenes", 
+                     "-statefile", "instanced_objects.xml",
+                     "-out", "z_out.bmp",
+                     "-nowindow", "1"],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        }
+        
+        
+
+    ]
+}

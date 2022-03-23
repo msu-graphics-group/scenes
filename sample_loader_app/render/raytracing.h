@@ -24,8 +24,12 @@ public:
   void CastSingleRay(uint32_t tidX, uint32_t tidY, uint32_t* out_color);
   void CastSingleRay(uint32_t tidX, uint32_t tidY, SampleInfo* out_sample);
   void CastSingleRay(uint32_t tidX, uint32_t tidY, float x_offset, float y_offset, SampleInfo* out_sample);
+
+  void CastSingleRayForSurfaceId(uint32_t tidX, uint32_t tidY, float x_offset, float y_offset, uint32_t* out_surfaceId);
+
   void kernel_InitEyeRay(float tidX, float tidY, LiteMath::float4* rayPosAndNear, LiteMath::float4* rayDirAndFar);
   void kernel_RayTrace(uint32_t tidX, uint32_t tidY, const LiteMath::float4* rayPosAndNear, const LiteMath::float4* rayDirAndFar, uint32_t* out_color);
+  void kernel_RayTraceID(uint32_t tidX, uint32_t tidY, const LiteMath::float4* rayPosAndNear, const LiteMath::float4* rayDirAndFar, uint32_t* out_color);
   void kernel_RayTrace(uint32_t tidX, uint32_t tidY, const LiteMath::float4* rayPosAndNear, const LiteMath::float4* rayDirAndFar, SampleInfo* out_sample);
 
 protected:

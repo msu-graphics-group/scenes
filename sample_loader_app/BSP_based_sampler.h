@@ -205,8 +205,8 @@ public:
 
     // Collect suspicious (aliased, with high divergence in neighbourhood) texels.
     std::vector<uint32_t> suspiciosTexelIds;
-    for (int i = 0; i < config.width; ++i) {
-      for (int j = 0; j < config.height; ++j) {
+    for (int i = 0; i < int(config.width); ++i) {
+      for (int j = 0; j < int(config.height); ++j) {
         bool needResample = false;
         const TexType texel = singleRayData[i * config.width + j];
         for (int x = std::max(i - 1, 0); x <= std::min(i + 1, (int)config.width - 1) && !needResample; ++x)
