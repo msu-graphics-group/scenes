@@ -307,7 +307,8 @@ int main(int argc, char **argv)
 {
   constexpr uint32_t WIDTH = 1024;
   constexpr uint32_t HEIGHT = 1024;
-
+  
+  std::cout << "[main]: loading scene ... " << std::endl;
   auto pRayTracerCPU = std::make_shared<RayTracer>(WIDTH, HEIGHT);
   auto loaded = pRayTracerCPU->LoadScene("../01_simple_scenes/instanced_objects.xml");
 
@@ -328,7 +329,6 @@ int main(int argc, char **argv)
     }
   }
 
-  // auto image = rayTraceCPU(pRayTracerCPU, WIDTH, HEIGHT, add_samples, radius);
   std::vector<uint32_t> image;
 
   BSPBasedSampler<SampleInfo>::Config config;
@@ -338,8 +338,11 @@ int main(int argc, char **argv)
   config.radius = 0.5f;
   config.additionalSamplesCnt = 4;
   BSPBasedSampler<SampleInfo> sampler(config);
-  sampler.configure(RTSampler(pRayTracerCPU, WIDTH, HEIGHT));
 
+  std::cout << "[main]: building bsp image ... " << std::endl;
+  sampler.configure(RTSampler(pRayTracerCPU, WIDTH, HEIGHT));
+  
+  std::cout << "[main]: compute 'antialiased_bsp' image ... " << std::endl;
   const uint32_t aaSamples = 4;
   for (uint32_t j = 0; j < HEIGHT; ++j)
   {
@@ -367,60 +370,43 @@ int main(int argc, char **argv)
 
   saveImageLDR("output_antialiased_bsp.png", image, WIDTH, HEIGHT, 4);
   
-  // test clear and sampling
-  //
+  std::cout << "[main]: compute 'antialiased' reference image ... " << std::endl;
+  
+  const int refSubSamples = aaSamples*aaSamples;
+  std::vector<float> hammSamples(refSubSamples * 2);
+  PlaneHammersley(hammSamples.data(), refSubSamples);
+  for (float& offset : hammSamples)
+    offset = (offset - 0.5f) * 2.0f * radius;
 
-  std::cout << "clear ... " << std::endl;
-  SampleInfo test;
-  test.color = 0;
-  test.objId = 0;
-  sampler.clear(test);
-
-  std::cout << "test sampling/access ... " << std::endl;
-  
-  // Choose a random mean between 1 and 6
-  std::random_device dev;
-  std::mt19937 rng(dev());
-  std::uniform_real_distribution<float> uniform(0.0f, 1.0f);
-  
-  
-  for (uint32_t j = 0; j < (WIDTH*HEIGHT); ++j)
+  std::vector<SampleInfo> raytracedImageData(WIDTH * HEIGHT);
+  std::vector<uint32_t>   image2(WIDTH * HEIGHT);
+  #pragma omp parallel for default(none) shared(HEIGHT, WIDTH, raytracedImageData, pRayTracerCPU, image2, hammSamples)
+  for (int j = 0; j < HEIGHT; ++j)
   {
-    float x = uniform(rng);
-    float y = uniform(rng);
-
-    float r = uniform(rng);
-    float g = uniform(rng);
-    float b = uniform(rng);
-
-    sampler.access(x,y).color = 0xFFFFFFFF; // uint32_t(r*255.0f) | uint32_t(g*255.0f) << 8 | uint32_t(b*255.0f) << 16;
-  }
-
-  for (uint32_t j = 0; j < HEIGHT; ++j)
-  {
-    for (uint32_t i = 0; i < WIDTH; ++i)
+    for (int i = 0; i < WIDTH; ++i)
     {
-      float r = 0, g = 0, b = 0;
-      for (uint32_t y = 0; y < aaSamples; ++y)
+      float gt_red   = 0;
+      float gt_green = 0;
+      float gt_blue  = 0;
+
+      for (int k = 0; k < refSubSamples; ++k)
       {
-        for (uint32_t x = 0; x < aaSamples; ++x)
-        {
-          const float x_coord = (float)(x + i * aaSamples) / (aaSamples * WIDTH);
-          const float y_coord = (float)(y + j * aaSamples) / (aaSamples * HEIGHT);
-          SampleInfo sample = sampler.sample(x_coord, y_coord);
-          r += ((sample.color >> 16) & 0xFF);
-          g += ((sample.color >> 8) & 0xFF);
-          b += (sample.color & 0xFF);
-        }
+        SampleInfo sample;
+        pRayTracerCPU->CastSingleRay(i, j, hammSamples[k * 2 + 0], hammSamples[k * 2 + 1], &sample);
+        gt_red   += float(sample.color & 0xFF)         / 255.0f;
+        gt_green += float((sample.color >> 8) & 0xFF)  / 255.0f;
+        gt_blue  += float((sample.color >> 16) & 0xFF) / 255.0f;
       }
-      r /= aaSamples * aaSamples;
-      g /= aaSamples * aaSamples;
-      b /= aaSamples * aaSamples;
-      image[j*WIDTH+i] = (0xFF000000 | ((uint32_t)(r) << 16) | ((uint32_t)(g) << 8) | (uint32_t)b);
+
+      gt_red   = saturate(gt_red/refSubSamples)   * 255.0f;
+      gt_green = saturate(gt_green/refSubSamples) * 255.0f;
+      gt_blue  = saturate(gt_blue/refSubSamples)  * 255.0f;
+
+      image2[j*WIDTH+i] = 0xFF000000u | (uint32_t(gt_blue) << 16) | (uint32_t(gt_green) << 8) | uint32_t(gt_red);
     }
   }
 
-  saveImageLDR("output_antialiased_bsp_sampled.png", image, WIDTH, HEIGHT, 4);
+  saveImageLDR("output_antialiased.png", image2, WIDTH, HEIGHT, 4);
 
   return 0;
 }
