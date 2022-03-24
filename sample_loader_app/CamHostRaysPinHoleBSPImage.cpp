@@ -114,7 +114,7 @@ public:
     config.height         = a_height;
     config.windowHalfSize = 1;
     config.radius         = 0.5f;
-    config.additionalSamplesCnt = 4;
+    config.additionalSamplesCnt = 32;
     m_pFrameBuffer = std::make_unique<BSPImage4f>(config);
 
     std::string scenePath = "/home/frol/PROG/msu-graphics-group/scenes/01_simple_scenes/instanced_objects.xml"; //#TODO: pass scene path here!
@@ -178,6 +178,9 @@ void PinHoleBSPImageAccum::MakeRaysBlock(RayPart1* out_rayPosAndNear, RayPart2* 
 
   const int putID = passId % HOST_RAYS_PIPELINE_LENGTH;
 
+  const float pixelSizeX = 1.0f/m_fwidth;
+  const float pixelSizeY = 1.0f/m_fheight;
+
   #pragma omp parallel for
   for(int i=0;i<int(in_blockSize);i++)
   {
@@ -217,8 +220,8 @@ void PinHoleBSPImageAccum::MakeRaysBlock(RayPart1* out_rayPosAndNear, RayPart2* 
     p2.dummy        = 0.0f;
 
     PipeThrough pipeData;
-    pipeData.x = rndX;
-    pipeData.y = rndY;
+    pipeData.x = rndX; // + 0.5f*pixelSizeX;
+    pipeData.y = rndY; // + 0.5f*pixelSizeY;
     pipeData.packedIndex = p1.xyPosPacked; 
     
     out_rayPosAndNear[i] = p1;
@@ -292,8 +295,10 @@ void PinHoleBSPImageAccum::FinishRendering()
       {
         for (uint32_t x = 0; x < aaSamples; ++x)
         {
-          const float x_coord    = (float)(x + j * aaSamples) / (aaSamples * m_width);
-          const float y_coord    = (float)(y + i * aaSamples) / (aaSamples * m_height);
+          float x_coord    = (float)(x + j * aaSamples) / (aaSamples * m_width);
+          float y_coord    = (float)(y + i * aaSamples) / (aaSamples * m_height);
+          //x_coord = LiteMath::clamp(x_coord, 0.0f, 0.995f);
+          //y_coord = LiteMath::clamp(y_coord, 0.0f, 0.995f);
           SubPixelElement sample = m_pFrameBuffer->sample(x_coord, y_coord);
           
           // perform tone mapping for subixel

@@ -336,7 +336,7 @@ int main(int argc, char **argv)
   config.height = HEIGHT;
   config.windowHalfSize = 1;
   config.radius = 0.5f;
-  config.additionalSamplesCnt = 4;
+  config.additionalSamplesCnt = 32;
   BSPBasedSampler<SampleInfo> sampler(config);
 
   std::cout << "[main]: building bsp image ... " << std::endl;
