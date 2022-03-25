@@ -40,6 +40,7 @@ struct SubPixelElement // can process as float4 in some cases
 {
   float    color[3] = {};
   uint32_t objId    = uint32_t(0xFFFFFFFF);
+  uint32_t hits     = 0;
 };
 
 static inline bool close_tex_data(SubPixelElement a, SubPixelElement b)
@@ -263,6 +264,7 @@ void PinHoleBSPImageAccum::AddSamplesContribution(float* out_color4f, const floa
     subPixel.color[0] += color[0];
     subPixel.color[1] += color[1];
     subPixel.color[2] += color[2];
+    subPixel.hits++;
 
     //assert(passData.packedIndex == packedIndex);           ///<! check that we actually took data from 'm_pipeline' for right ray
 
@@ -289,9 +291,9 @@ void PinHoleBSPImageAccum::FinishRendering()
 
   const float invSPP = 1.0f/m_spp;
 
-  const uint32_t aaSamples = 4;
-  const float invMultAA = 1.0f/float(aaSamples * aaSamples);
-
+  const uint32_t aaSamples  = 4;
+  const float    aaSamplesTotalf = float(aaSamples*aaSamples);
+  
   for (uint32_t x1 = 0; x1 < m_width; ++x1)
   {
     for (uint32_t y1 = 0; y1 < m_height; ++y1)
@@ -313,15 +315,18 @@ void PinHoleBSPImageAccum::FinishRendering()
           sample.color[1] = std::min(sample.color[1]*invSPP, 1.0f);
           sample.color[2] = std::min(sample.color[2]*invSPP, 1.0f);
           
-          r += sample.color[0];
-          g += sample.color[1];
-          b += sample.color[2];
+          if(sample.hits > 0)
+          {
+            r += sample.color[0]/float(sample.hits);
+            g += sample.color[1]/float(sample.hits);
+            b += sample.color[2]/float(sample.hits);
+          }
         }
       }
       
-      const float r1 = std::pow(r*invMultAA, 1.0f/2.2f);
-      const float g1 = std::pow(g*invMultAA, 1.0f/2.2f);
-      const float b1 = std::pow(b*invMultAA, 1.0f/2.2f);
+      const float r1 = std::pow(aaSamplesTotalf*r, 1.0f/2.2f);
+      const float g1 = std::pow(aaSamplesTotalf*g, 1.0f/2.2f);
+      const float b1 = std::pow(aaSamplesTotalf*b, 1.0f/2.2f);
 
       imageLDR[y1*m_width+x1] = 0xFF000000 | (uint32_t(r1*255.0f) << 0) | (uint32_t(g1*255.0f) << 8) | (uint32_t(b1*255.0f) << 16);
     }
