@@ -24,6 +24,7 @@ using LiteMath::float2;
 #include "svm.h"
 #include "RT_sampler.h"
 #include "BSP_based_sampler.h"
+#include "Stupid_sampler.h"
 #include <set>
 #include <cassert>
 #include <fstream>
@@ -46,7 +47,8 @@ static inline bool close_tex_data(SubPixelElement a, SubPixelElement b)
   return a.objId == b.objId;
 }
 
-using BSPImage4f = BSPBasedSampler<SubPixelElement>;
+//using BSPImage4f = BSPBasedSampler<SubPixelElement>;
+using BSPImage4f = StupidImageSampler<SubPixelElement>;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -109,13 +111,15 @@ public:
     //  cout << std::endl;
     //}
 
-    BSPImage4f::Config config;
-    config.width          = a_width;
-    config.height         = a_height;
-    config.windowHalfSize = 1;
-    config.radius         = 0.5f;
-    config.additionalSamplesCnt = 32;
-    m_pFrameBuffer = std::make_unique<BSPImage4f>(config);
+    //BSPImage4f::Config config;
+    //config.width          = a_width;
+    //config.height         = a_height;
+    //config.windowHalfSize = 1;
+    //config.radius         = 0.5f;
+    //config.additionalSamplesCnt = 32;
+    //m_pFrameBuffer = std::make_unique<BSPImage4f>(config);
+
+    m_pFrameBuffer = std::make_unique<BSPImage4f>(a_width, a_height);
 
     std::string scenePath = "/home/frol/PROG/msu-graphics-group/scenes/01_simple_scenes/instanced_objects.xml"; //#TODO: pass scene path here!
     outImagePath          = "/home/frol/PROG/msu-graphics-group/scenes/sample_loader_app/z_out_bsp.png";
@@ -288,17 +292,17 @@ void PinHoleBSPImageAccum::FinishRendering()
   const uint32_t aaSamples = 4;
   const float invMultAA = 1.0f/float(aaSamples * aaSamples);
 
-  for (uint32_t j = 0; j < m_width; ++j)
+  for (uint32_t x1 = 0; x1 < m_width; ++x1)
   {
-    for (uint32_t i = 0; i < m_height; ++i)
+    for (uint32_t y1 = 0; y1 < m_height; ++y1)
     {
       float r = 0, g = 0, b = 0;
       for (uint32_t y = 0; y < aaSamples; ++y)
       {
         for (uint32_t x = 0; x < aaSamples; ++x)
         {
-          float x_coord    = (float)(x + j * aaSamples) / (aaSamples * m_width);
-          float y_coord    = (float)(y + i * aaSamples) / (aaSamples * m_height);
+          float x_coord = (float)(x + x1 * aaSamples) / float(aaSamples * m_width);
+          float y_coord = (float)(y + y1 * aaSamples) / float(aaSamples * m_height);
           //x_coord = LiteMath::clamp(x_coord, 0.0f, 0.995f);
           //y_coord = LiteMath::clamp(y_coord, 0.0f, 0.995f);
           SubPixelElement sample = m_pFrameBuffer->sample(x_coord, y_coord);
@@ -319,7 +323,7 @@ void PinHoleBSPImageAccum::FinishRendering()
       const float g1 = std::pow(g*invMultAA, 1.0f/2.2f);
       const float b1 = std::pow(b*invMultAA, 1.0f/2.2f);
 
-      imageLDR[i*m_width+j] = 0xFF000000 | (uint32_t(r1*255.0f) << 0) | (uint32_t(g1*255.0f) << 8) | (uint32_t(b1*255.0f) << 16);
+      imageLDR[y1*m_width+x1] = 0xFF000000 | (uint32_t(r1*255.0f) << 0) | (uint32_t(g1*255.0f) << 8) | (uint32_t(b1*255.0f) << 16);
     }
   }
 

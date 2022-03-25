@@ -53,20 +53,20 @@ class StupidImageSampler
     // Fill initial grid. One ray per texel.
     for (uint32_t y = 0; y < config.height; ++y)
       for (uint32_t x = 0; x < config.width; ++x)
-        singleRayData[y * config.width + x] = sampler.fetch(x, y);
+        singleRayData[y*config.width + x] = sampler.fetch(x, y);
 
     // Collect suspicious (aliased, with high divergence in neighbourhood) texels.
     m_subPixels.reserve(10*(config.width + config.height));
-    for (int j = 0; j < int(config.height); ++j) {
-      for (int i = 0; i < int(config.width); ++i) {
+    for (int y1 = 0; y1 < int(config.height); ++y1) {
+      for (int x1 = 0; x1 < int(config.width); ++x1) {
         bool needResample = false;
-        const TexType texel = singleRayData[i * config.width + j];
-        for (int x = std::max(i - 1, 0); x <= std::min(i + 1, (int)config.width - 1) && !needResample; ++x)
-          for (int y = std::max(j - 1, 0); y <= std::min(j + 1, (int)config.height - 1) && !needResample; ++y)
+        const TexType texel = singleRayData[y1 * config.width + x1];
+        for (int x = std::max(x1 - 1, 0); x <= std::min(x1 + 1, (int)config.width - 1) && !needResample; ++x)
+          for (int y = std::max(y1 - 1, 0); y <= std::min(y1 + 1, (int)config.height - 1) && !needResample; ++y)
             needResample = !close_tex_data(singleRayData[y * config.width + x], texel);
 
         if (needResample)
-          m_subPixels[PackXY(i,j)] = SubPixel();
+          m_subPixels[PackXY(x1,y1)] = SubPixel();
       }
     }
 
