@@ -74,7 +74,7 @@
   </light>
 </lights_lib>
 <cam_lib>
-  <camera id="0" name="my camera" type="uvn">
+  <camera id="0" name="my camera" type="uvn" integrator_iters="4" cpu_plugin="1" cpu_plugin_dll="/home/frol/PROG/msu-graphics-group/scenes/sample_loader_app/libhydra_bsp_image.so">
     <fov>45</fov>
     <nearClipPlane>0.01</nearClipPlane>
     <farClipPlane>100.0</farClipPlane>
@@ -85,15 +85,15 @@
 </cam_lib>
 <render_lib>
   <render_settings type="HydraModern" id="0">
-    <width>512</width>
-    <height>512</height>
+    <width>1024</width>
+    <height>1024</height>
     <method_primary>pathtracing</method_primary>
     <method_secondary>pathtracing</method_secondary>
     <method_tertiary>pathtracing</method_tertiary>
     <method_caustic>pathtracing</method_caustic>
     <trace_depth>8</trace_depth>
     <diff_trace_depth>4</diff_trace_depth>
-    <maxRaysPerPixel>1024</maxRaysPerPixel>
+    <maxRaysPerPixel>256</maxRaysPerPixel>
     <qmc_variant>7</qmc_variant>
   </render_settings>
 </render_lib>

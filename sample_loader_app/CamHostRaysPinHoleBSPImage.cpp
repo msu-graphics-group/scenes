@@ -183,8 +183,8 @@ void PinHoleBSPImageAccum::MakeRaysBlock(RayPart1* out_rayPosAndNear, RayPart2* 
 
   const int putID = passId % HOST_RAYS_PIPELINE_LENGTH;
 
-  const float pixelSizeX = 1.0f/m_fwidth;
-  const float pixelSizeY = 1.0f/m_fheight;
+  //const float pixelSizeX = 1.0f/m_fwidth;
+  //const float pixelSizeY = 1.0f/m_fheight;
 
   #pragma omp parallel for
   for(int i=0;i<int(in_blockSize);i++)
@@ -293,6 +293,7 @@ void PinHoleBSPImageAccum::FinishRendering()
 
   const uint32_t aaSamples  = 4;
   const float    aaSamplesTotalf = float(aaSamples*aaSamples);
+  const float    aaSamplesTotalInv = 1.0f/aaSamplesTotalf;
   
   for (uint32_t x1 = 0; x1 < m_width; ++x1)
   {
@@ -309,24 +310,21 @@ void PinHoleBSPImageAccum::FinishRendering()
           //y_coord = LiteMath::clamp(y_coord, 0.0f, 0.995f);
           SubPixelElement sample = m_pFrameBuffer->sample(x_coord, y_coord);
           
-          // perform tone mapping for subixel
-          //
-          sample.color[0] = std::min(sample.color[0]*invSPP, 1.0f);
-          sample.color[1] = std::min(sample.color[1]*invSPP, 1.0f);
-          sample.color[2] = std::min(sample.color[2]*invSPP, 1.0f);
-          
           if(sample.hits > 0)
           {
-            r += sample.color[0]/float(sample.hits);
-            g += sample.color[1]/float(sample.hits);
-            b += sample.color[2]/float(sample.hits);
+            // perform tone mapping for subixel
+            //
+            const float hitsAccount = aaSamplesTotalf/float(sample.hits);
+            r += std::min(sample.color[0]*invSPP*hitsAccount, aaSamplesTotalInv);
+            g += std::min(sample.color[1]*invSPP*hitsAccount, aaSamplesTotalInv);
+            b += std::min(sample.color[2]*invSPP*hitsAccount, aaSamplesTotalInv);
           }
         }
       }
       
-      const float r1 = std::pow(aaSamplesTotalf*r, 1.0f/2.2f);
-      const float g1 = std::pow(aaSamplesTotalf*g, 1.0f/2.2f);
-      const float b1 = std::pow(aaSamplesTotalf*b, 1.0f/2.2f);
+      const float r1 = std::pow(r, 1.0f/2.2f);
+      const float g1 = std::pow(g, 1.0f/2.2f);
+      const float b1 = std::pow(b, 1.0f/2.2f);
 
       imageLDR[y1*m_width+x1] = 0xFF000000 | (uint32_t(r1*255.0f) << 0) | (uint32_t(g1*255.0f) << 8) | (uint32_t(b1*255.0f) << 16);
     }
