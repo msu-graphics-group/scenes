@@ -82,10 +82,10 @@ class StupidImageSampler
       auto& subPixel = pair.second;
       for(uint32_t sy=0; sy < SUBPIXEL_SIZE_Y; sy++)
       {
-        const float yNormalized = (fpy + (float(sy)+0.5f)/float(SUBPIXEL_SIZE_Y))*config.invHeight;
+        const float yNormalized = (fpy + (float(sy))/float(SUBPIXEL_SIZE_Y))*config.invHeight;
         for(uint32_t sx=0; sx < SUBPIXEL_SIZE_X; sx++)
         {
-          const float xNormalized = (fpx + (float(sx)+0.5f)/float(SUBPIXEL_SIZE_X))*config.invWidth;
+          const float xNormalized = (fpx + (float(sx))/float(SUBPIXEL_SIZE_X))*config.invWidth;
           subPixel.data[sx][sy] = sampler.sample(xNormalized, yNormalized);
         }
       }
@@ -105,8 +105,8 @@ class StupidImageSampler
     
     const float offsetX = (fx - float(x_texel))*float(SUBPIXEL_SIZE_X);
     const float offsetY = (fy - float(y_texel))*float(SUBPIXEL_SIZE_Y);
-    const uint32_t ux = std::min(uint32_t(offsetX + 0.5f),SUBPIXEL_SIZE_X-1);
-    const uint32_t uy = std::min(uint32_t(offsetY + 0.5f),SUBPIXEL_SIZE_Y-1);
+    const uint32_t ux = std::min(uint32_t(offsetX),SUBPIXEL_SIZE_X-1);
+    const uint32_t uy = std::min(uint32_t(offsetY),SUBPIXEL_SIZE_Y-1);
     return p->second.data[ux][uy];
   }
   

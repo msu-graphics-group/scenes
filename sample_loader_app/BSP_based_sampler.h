@@ -187,6 +187,17 @@ class BSPBasedSampler
   }
 
 public:
+
+  BSPBasedSampler(uint32_t a_width, uint32_t a_height)
+  {
+    config.width          = a_width;
+    config.height         = a_height;
+    config.windowHalfSize = 1;
+    config.radius         = 0.5f;
+    config.additionalSamplesCnt = 64;
+    singleRayData.resize(config.width * config.height);
+    hammSamples = gen_hammersley(config.additionalSamplesCnt, config.radius);
+  }
   BSPBasedSampler(const Config &conf) : config(conf) 
   {
     singleRayData.resize(config.width * config.height);

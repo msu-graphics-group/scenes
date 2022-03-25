@@ -50,7 +50,7 @@
             "request": "launch",
             "program": "/home/frol/hydra/hydra",
             "args": ["-inputlib", "/home/frol/PROG/msu-graphics-group/scenes/01_simple_scenes", 
-                     "-statefile", "instanced_objects.xml",
+                     "-statefile", "bunny_cornell.xml",
                      "-out", "z_out.bmp",
                      "-nowindow", "1"],
             "stopAtEntry": false,

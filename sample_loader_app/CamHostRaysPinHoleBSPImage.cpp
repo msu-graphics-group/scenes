@@ -105,24 +105,10 @@ public:
         m_projInv(i,j) = a_projInvMatrix[j*4+i];             // assume column major !
     //memcpy(&m_projInv, a_projInvMatrix, sizeof(float4x4)); // actually same but, not safe if our matrices and Hydra matrices will have different layout
 
-    //std::cout << "[PinHoleBSPImageAccum] m_projInv: " << std::endl;
-    //for(int i=0;i<4;i++) {
-    //  for(int j=0;j<4;j++)
-    //    cout << m_projInv(i,j) << " ";
-    //  cout << std::endl;
-    //}
-
-    //BSPImage4f::Config config;
-    //config.width          = a_width;
-    //config.height         = a_height;
-    //config.windowHalfSize = 1;
-    //config.radius         = 0.5f;
-    //config.additionalSamplesCnt = 32;
-    //m_pFrameBuffer = std::make_unique<BSPImage4f>(config);
-
     m_pFrameBuffer = std::make_unique<BSPImage4f>(a_width, a_height);
 
-    std::string scenePath = "/home/frol/PROG/msu-graphics-group/scenes/01_simple_scenes/instanced_objects.xml"; //#TODO: pass scene path here!
+    //std::string scenePath = "/home/frol/PROG/msu-graphics-group/scenes/01_simple_scenes/instanced_objects.xml"; //#TODO: pass scene path here!
+    std::string scenePath = "/home/frol/PROG/msu-graphics-group/scenes/01_simple_scenes/bunny_cornell.xml";     //#TODO: pass scene path here!
     outImagePath          = "/home/frol/PROG/msu-graphics-group/scenes/sample_loader_app/z_out_bsp.png";
     
     std::cout << "[PinHoleBSP]: loading scene from " << scenePath.c_str() << std::endl;
@@ -294,10 +280,10 @@ void PinHoleBSPImageAccum::FinishRendering()
   const uint32_t aaSamples  = 4;
   const float    aaSamplesTotalf = float(aaSamples*aaSamples);
   const float    aaSamplesTotalInv = 1.0f/aaSamplesTotalf;
-  
-  for (uint32_t x1 = 0; x1 < m_width; ++x1)
+
+  for (uint32_t y1 = 0; y1 < m_height; ++y1)
   {
-    for (uint32_t y1 = 0; y1 < m_height; ++y1)
+    for (uint32_t x1 = 0; x1 < m_width; ++x1)
     {
       float r = 0, g = 0, b = 0;
       for (uint32_t y = 0; y < aaSamples; ++y)
