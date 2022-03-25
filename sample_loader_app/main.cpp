@@ -5,6 +5,7 @@
 #include "svm.h"
 #include "RT_sampler.h"
 #include "BSP_based_sampler.h"
+#include "Stupid_sampler.h"
 #include <set>
 #include <cassert>
 #include <fstream>
@@ -338,6 +339,7 @@ int main(int argc, char **argv)
   config.radius = 0.5f;
   config.additionalSamplesCnt = 32;
   BSPBasedSampler<SampleInfo> sampler(config);
+ 
 
   std::cout << "[main]: building bsp image ... " << std::endl;
   sampler.configure(RTSampler(pRayTracerCPU, WIDTH, HEIGHT));
@@ -368,7 +370,7 @@ int main(int argc, char **argv)
     }
   }
 
-  saveImageLDR("output_antialiased_bsp.png", image, WIDTH, HEIGHT, 4);
+  saveImageLDR("02_output_antialiased_bsp.png", image, WIDTH, HEIGHT, 4);
   
   std::cout << "[main]: compute 'antialiased' reference image ... " << std::endl;
   
@@ -406,7 +408,41 @@ int main(int argc, char **argv)
     }
   }
 
-  saveImageLDR("output_antialiased.png", image2, WIDTH, HEIGHT, 4);
+  saveImageLDR("01_output_antialiased.png", image2, WIDTH, HEIGHT, 4);
+
+  // now check the same with our "stupid subpixel image" approach
+  //
+  StupidImageSampler<SampleInfo> samplerStupid(WIDTH,HEIGHT);
+
+  std::cout << "[main]: building stupid subpixel image ... " << std::endl;
+  samplerStupid.configure(RTSampler(pRayTracerCPU, WIDTH, HEIGHT));
+
+  std::cout << "[main]: compute 'antialiased_stupid' image ... " << std::endl;
+  for (uint32_t j = 0; j < HEIGHT; ++j)
+  {
+    for (uint32_t i = 0; i < WIDTH; ++i)
+    {
+      float r = 0, g = 0, b = 0;
+      for (uint32_t y = 0; y < aaSamples; ++y)
+      {
+        for (uint32_t x = 0; x < aaSamples; ++x)
+        {
+          const float x_coord = (float)(x + i * aaSamples) / (aaSamples * WIDTH);
+          const float y_coord = (float)(y + j * aaSamples) / (aaSamples * HEIGHT);
+          SampleInfo sample = samplerStupid.sample(x_coord, y_coord);
+          r += ((sample.color >> 16) & 0xFF);
+          g += ((sample.color >> 8) & 0xFF);
+          b += (sample.color & 0xFF);
+        }
+      }
+      r /= aaSamples * aaSamples;
+      g /= aaSamples * aaSamples;
+      b /= aaSamples * aaSamples;
+      image.push_back(0xFF000000 | ((uint32_t)(r) << 16) | ((uint32_t)(g) << 8) | (uint32_t)b);
+    }
+  }
+
+  saveImageLDR("03_output_antialiased_stupid.png", image, WIDTH, HEIGHT, 4);
 
   return 0;
 }

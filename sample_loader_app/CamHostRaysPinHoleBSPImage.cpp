@@ -286,6 +286,8 @@ void PinHoleBSPImageAccum::FinishRendering()
   const float invSPP = 1.0f/m_spp;
 
   const uint32_t aaSamples = 4;
+  const float invMultAA = 1.0f/float(aaSamples * aaSamples);
+
   for (uint32_t j = 0; j < m_width; ++j)
   {
     for (uint32_t i = 0; i < m_height; ++i)
@@ -312,13 +314,10 @@ void PinHoleBSPImageAccum::FinishRendering()
           b += sample.color[2];
         }
       }
-      r /= (aaSamples * aaSamples);
-      g /= (aaSamples * aaSamples);
-      b /= (aaSamples * aaSamples);
       
-      const float r1 = std::pow(r, 1.0f/2.2f);
-      const float g1 = std::pow(g, 1.0f/2.2f);
-      const float b1 = std::pow(b, 1.0f/2.2f);
+      const float r1 = std::pow(r*invMultAA, 1.0f/2.2f);
+      const float g1 = std::pow(g*invMultAA, 1.0f/2.2f);
+      const float b1 = std::pow(b*invMultAA, 1.0f/2.2f);
 
       imageLDR[i*m_width+j] = 0xFF000000 | (uint32_t(r1*255.0f) << 0) | (uint32_t(g1*255.0f) << 8) | (uint32_t(b1*255.0f) << 16);
     }
