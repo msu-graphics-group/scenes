@@ -311,7 +311,8 @@ int main(int argc, char **argv)
   
   std::cout << "[main]: loading scene ... " << std::endl;
   auto pRayTracerCPU = std::make_shared<RayTracer>(WIDTH, HEIGHT);
-  auto loaded = pRayTracerCPU->LoadScene("../01_simple_scenes/instanced_objects.xml");
+  //auto loaded = pRayTracerCPU->LoadScene("../01_simple_scenes/instanced_objects.xml");
+  auto loaded = pRayTracerCPU->LoadScene("../01_simple_scenes/bunny_cornell.xml");
 
   if(!loaded)
     return -1;
@@ -413,6 +414,7 @@ int main(int argc, char **argv)
   // now check the same with our "stupid subpixel image" approach
   //
   StupidImageSampler<SampleInfo> samplerStupid(WIDTH,HEIGHT);
+  image.resize(0);
 
   std::cout << "[main]: building stupid subpixel image ... " << std::endl;
   samplerStupid.configure(RTSampler(pRayTracerCPU, WIDTH, HEIGHT));

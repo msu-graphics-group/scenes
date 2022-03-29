@@ -110,5 +110,19 @@ class StupidImageSampler
     return p->second.data[ux][uy];
   }
   
-  TexType sample(float x, float y) { return access(x,y); }
+  //TexType sample(float x, float y) { return access(x,y); }
+
+  TexType sample(float x, float y) // for debug
+  {
+    const float fx = x * config.fwidth;
+    const float fy = y * config.fheight;
+    const uint32_t x_texel = uint32_t(fx);
+    const uint32_t y_texel = uint32_t(fy);
+  
+    auto p = m_subPixels.find(PackXY(x_texel,y_texel));
+    if (p == m_subPixels.end())
+      return singleRayData[y_texel * config.width + x_texel];
+    
+    return TexType();
+  }
 };

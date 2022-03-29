@@ -216,25 +216,22 @@ public:
 
     // Collect suspicious (aliased, with high divergence in neighbourhood) texels.
     std::vector<uint32_t> suspiciosTexelIds;
-    for (int i = 0; i < int(config.width); ++i) {
-      for (int j = 0; j < int(config.height); ++j) {
+    for (int y1 = 0; y1 < int(config.height); ++y1) {
+      for (int x1 = 0; x1 < int(config.width); ++x1) {
+
         bool needResample = false;
-        const TexType texel = singleRayData[i * config.width + j];
-        for (int x = std::max(i - 1, 0); x <= std::min(i + 1, (int)config.width - 1) && !needResample; ++x)
-        {
-          for (int y = std::max(j - 1, 0); y <= std::min(j + 1, (int)config.height - 1) && !needResample; ++y)
-          {
+        const TexType texel = singleRayData[y1 * config.width + x1];
+        
+        for (int x = std::max(x1 - 1, 0); x <= std::min(x1 + 1, (int)config.width - 1) && !needResample; ++x)
+          for (int y = std::max(y1 - 1, 0); y <= std::min(y1 + 1, (int)config.height - 1) && !needResample; ++y)
             needResample = !close_tex_data(singleRayData[y * config.width + x], texel);
-          }
-        }
+      
         if (needResample)
-        {
-          suspiciosTexelIds.push_back(j * config.width + i);
-        }
+          suspiciosTexelIds.push_back(y1 * config.width + x1);
       }
     }
 
-    const uint32_t samplesCount = config.additionalSamplesCnt + 1;
+    const uint32_t samplesCount = config.additionalSamplesCnt + 1; //#vf: why +1 ????? !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     // Process suspicious texels
     std::vector<TexType> samples;
@@ -353,9 +350,10 @@ public:
     const uint32_t y_texel = y * config.height;
     const uint32_t texel_id = y_texel * config.width + x_texel;
     if (specialTexels.count(texel_id) == 0)
-    {
       return singleRayData[texel_id];
-    }
+
+    return TexType(); // #VF: for debug
+
     const float x_local = ((x * config.width - x_texel) - 0.5f) * 2.f * config.radius;
     const float y_local = ((y * config.height - y_texel) - 0.5f) * 2.f * config.radius;
 

@@ -48,8 +48,8 @@ static inline bool close_tex_data(SubPixelElement a, SubPixelElement b)
   return a.objId == b.objId;
 }
 
-//using BSPImage4f = BSPBasedSampler<SubPixelElement>;
-using BSPImage4f = StupidImageSampler<SubPixelElement>;
+using BSPImage4f = BSPBasedSampler<SubPixelElement>;
+//using BSPImage4f = StupidImageSampler<SubPixelElement>;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -108,7 +108,7 @@ public:
     m_pFrameBuffer = std::make_unique<BSPImage4f>(a_width, a_height);
 
     //std::string scenePath = "/home/frol/PROG/msu-graphics-group/scenes/01_simple_scenes/instanced_objects.xml"; //#TODO: pass scene path here!
-    std::string scenePath = "/home/frol/PROG/msu-graphics-group/scenes/01_simple_scenes/bunny_cornell.xml";     //#TODO: pass scene path here!
+    std::string scenePath = "/home/frol/PROG/msu-graphics-group/scenes/01_simple_scenes/bunny_cornell.xml";       //#TODO: pass scene path here!
     outImagePath          = "/home/frol/PROG/msu-graphics-group/scenes/sample_loader_app/z_out_bsp.png";
     
     std::cout << "[PinHoleBSP]: loading scene from " << scenePath.c_str() << std::endl;
