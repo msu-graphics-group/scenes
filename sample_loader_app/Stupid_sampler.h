@@ -83,10 +83,10 @@ class StupidImageSampler
       auto& subPixel = pair.second;
       for(uint32_t sy=0; sy < SUBPIXEL_SIZE_Y; sy++)
       {
-        const float yNormalized = (fpy + (float(sy))/float(SUBPIXEL_SIZE_Y))*config.invHeight;
+        const float yNormalized = (fpy + (float(sy) + 0.5f)/float(SUBPIXEL_SIZE_Y) - 0.5f)*config.invHeight;
         for(uint32_t sx=0; sx < SUBPIXEL_SIZE_X; sx++)
         {
-          const float xNormalized = (fpx + (float(sx))/float(SUBPIXEL_SIZE_X))*config.invWidth;
+          const float xNormalized = (fpx + (float(sx) + 0.5f)/float(SUBPIXEL_SIZE_X) - 0.5f)*config.invWidth;
           subPixel.data[sx][sy] = sampler.sample(xNormalized, yNormalized);
         }
       }
