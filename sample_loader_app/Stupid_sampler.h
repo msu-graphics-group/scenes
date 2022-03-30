@@ -51,8 +51,9 @@ class StupidImageSampler
   void configure(const BaseSampler &sampler)
   {
     // Fill initial grid. One ray per texel.
-    for (uint32_t y = 0; y < config.height; ++y)
-      for (uint32_t x = 0; x < config.width; ++x)
+    #pragma omp parallel for default(none) shared(singleRayData, sampler, config)
+    for (int y = 0; y < int(config.height); ++y)
+      for (int x = 0; x < int(config.width); ++x)
         singleRayData[y*config.width + x] = sampler.fetch(x, y);
 
     // Collect suspicious (aliased, with high divergence in neighbourhood) texels.

@@ -46,6 +46,6 @@ protected:
 };
 
 LiteMath::float4x4 perspectiveMatrix(float fovy, float aspect, float zNear, float zFar);
-LiteMath::float3 EyeRayDir(float x, float y, float w, float h, LiteMath::float4x4 a_mViewProjInv);
+LiteMath::float3   EyeRayDirNormalized(float x, float y, LiteMath::float4x4 a_mViewProjInv);
 
 #endif// LOADER_RAYTRACING_H

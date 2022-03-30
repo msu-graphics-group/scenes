@@ -63,16 +63,14 @@ public:
   SubPixelElement sample(float x, float y) const
   {
     SubPixelElement sample;
-    const uint32_t x_texel = uint32_t(x) * width;
-    const uint32_t y_texel = uint32_t(y) * height;
-    sample.objId = tracer->CastSingleRay(x_texel + x * width - x_texel, y_texel + y * width - y_texel).objId;
+    sample.objId = tracer->CastSingleRay(x * float(width), y * float(height)).objId;
     return sample;
   }
 
   SubPixelElement fetch(uint32_t x, uint32_t y) const
   {
     SubPixelElement sample;
-    sample.objId = tracer->CastSingleRay(x, y).objId; // + 0.5f ???
+    sample.objId = tracer->CastSingleRay(float(x)+0.5f, float(y)+0.5f).objId; 
     return sample;
   }
 };
@@ -157,7 +155,7 @@ static inline int myAsInt(float x)
   memcpy(&res, &x, sizeof(int));
   return res;
 }
-LiteMath::float3 EyeRayDir(float x, float y, float w, float h, LiteMath::float4x4 a_mViewProjInv);
+LiteMath::float3 EyeRayDirNormalized(float x, float y, LiteMath::float4x4 a_mViewProjInv);
 
 void PinHoleBSPImageAccum::MakeRaysBlock(RayPart1* out_rayPosAndNear, RayPart2* out_rayDirAndFar, size_t in_blockSize, int passId)
 {
@@ -169,20 +167,14 @@ void PinHoleBSPImageAccum::MakeRaysBlock(RayPart1* out_rayPosAndNear, RayPart2* 
 
   const int putID = passId % HOST_RAYS_PIPELINE_LENGTH;
 
-  //const float pixelSizeX = 1.0f/m_fwidth;
-  //const float pixelSizeY = 1.0f/m_fheight;
-
   #pragma omp parallel for
   for(int i=0;i<int(in_blockSize);i++)
   {
     const float rndX = hr_qmc::rndFloat(m_globalCounter+i, 0, table[0]);
     const float rndY = hr_qmc::rndFloat(m_globalCounter+i, 1, table[0]);
-    
-    const float x    = m_fwidth*rndX; 
-    const float y    = m_fheight*rndY;
 
     float3 ray_pos = float3(0,0,0);
-    float3 ray_dir = EyeRayDir(x, y, m_fwidth, m_fheight, m_projInv);
+    float3 ray_dir = EyeRayDirNormalized(rndX, rndY, m_projInv);
 
     //if (DOF_IS_ENABLED) // dof is enabled
     //{
@@ -202,7 +194,7 @@ void PinHoleBSPImageAccum::MakeRaysBlock(RayPart1* out_rayPosAndNear, RayPart2* 
     p1.origin[0]   = ray_pos.x;
     p1.origin[1]   = ray_pos.y;
     p1.origin[2]   = ray_pos.z;
-    p1.xyPosPacked = myPackXY1616(int(x), int(y));
+    p1.xyPosPacked = myPackXY1616(int(m_fwidth*rndX - 0.5f), int(m_fheight*rndY - 0.5f));
    
     RayPart2 p2;
     p2.direction[0] = ray_dir.x;
@@ -211,8 +203,8 @@ void PinHoleBSPImageAccum::MakeRaysBlock(RayPart1* out_rayPosAndNear, RayPart2* 
     p2.dummy        = 0.0f;
 
     PipeThrough pipeData;
-    pipeData.x = rndX; // + 0.5f*pixelSizeX;
-    pipeData.y = rndY; // + 0.5f*pixelSizeY;
+    pipeData.x = rndX; 
+    pipeData.y = rndY; 
     pipeData.packedIndex = p1.xyPosPacked; 
     
     out_rayPosAndNear[i] = p1;

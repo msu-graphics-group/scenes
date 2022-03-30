@@ -79,17 +79,10 @@ int main(int argc, char **argv)
     return -1;
 
   float radius = 0.5;
-  uint32_t add_samples = 256;
   for (int i = 1; i < argc - 1; ++i)
   {
-    if (strcmp("-add_samples", argv[i]) == 0)
-    {
-      add_samples = std::atoi(argv[i + 1]);
-    }
     if (strcmp("-radius", argv[i]) == 0)
-    {
       radius = std::atof(argv[i + 1]);
-    }
   }
 
   std::vector<uint32_t> image(WIDTH*HEIGHT);
@@ -116,15 +109,15 @@ int main(int argc, char **argv)
 
   std::vector<SurfaceInfo> raytracedImageData(WIDTH * HEIGHT);
   #pragma omp parallel for default(none) shared(HEIGHT, WIDTH, raytracedImageData, pRayTracerCPU, image, hammSamples)
-  for (int j = 0; j < HEIGHT; ++j)
+  for (int j = 0; j < int(HEIGHT); ++j)
   {
-    for (int i = 0; i < WIDTH; ++i)
+    for (int i = 0; i < int(WIDTH); ++i)
     {
       float gt_red   = 0;
       float gt_green = 0;
       float gt_blue  = 0;
 
-      for (int k = 0; k < refSubSamples; ++k)
+      for (int k = 0; k < int(refSubSamples); ++k)
       {
         SurfaceInfo sample = pRayTracerCPU->CastSingleRay(float(i) + hammSamples[k * 2 + 0], 
                                                           float(j) + hammSamples[k * 2 + 1]);
@@ -152,7 +145,6 @@ int main(int argc, char **argv)
   config.additionalSamplesCnt = 32;
   BSPBasedSampler<SurfaceInfo> sampler(config);
  
-
   std::cout << "[main]: building bsp image ... " << std::endl;
   sampler.configure(RTSampler(pRayTracerCPU, WIDTH, HEIGHT));
   
