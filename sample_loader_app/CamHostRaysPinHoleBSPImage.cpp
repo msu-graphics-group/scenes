@@ -65,14 +65,14 @@ public:
     SubPixelElement sample;
     const uint32_t x_texel = uint32_t(x) * width;
     const uint32_t y_texel = uint32_t(y) * height;
-    tracer->CastSingleRayForSurfaceId(x_texel, y_texel, x * width - x_texel, y * width - y_texel, &sample.objId);
+    sample.objId = tracer->CastSingleRay(x_texel + x * width - x_texel, y_texel + y * width - y_texel).objId;
     return sample;
   }
 
   SubPixelElement fetch(uint32_t x, uint32_t y) const
   {
     SubPixelElement sample;
-    tracer->CastSingleRayForSurfaceId(x, y, 0, 0, &sample.objId);
+    sample.objId = tracer->CastSingleRay(x, y).objId; // + 0.5f ???
     return sample;
   }
 };

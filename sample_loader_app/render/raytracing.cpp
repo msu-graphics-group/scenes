@@ -30,36 +30,15 @@ static inline void transform_ray3f(float4x4 a_mWorldViewInv, float3* ray_pos, fl
 ////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////
 
-void RayTracer::CastSingleRay(uint32_t tidX, uint32_t tidY, uint32_t* out_color)
+SurfaceInfo RayTracer::CastSingleRay(float x, float y)
 {
+  SurfaceInfo outSam;
   LiteMath::float4 rayPosAndNear, rayDirAndFar;
-  kernel_InitEyeRay(tidX, tidY, &rayPosAndNear, &rayDirAndFar);
-
-  kernel_RayTrace(tidX, tidY, &rayPosAndNear, &rayDirAndFar, out_color);
+  kernel_InitEyeRay(x, y, &rayPosAndNear, &rayDirAndFar);
+  kernel_RayTrace  (0, 0, &rayPosAndNear, &rayDirAndFar, &outSam);
+  return outSam;
 }
 
-void RayTracer::CastSingleRay(uint32_t tidX, uint32_t tidY, SampleInfo* out_sample)
-{
-  LiteMath::float4 rayPosAndNear, rayDirAndFar;
-  kernel_InitEyeRay(tidX, tidY, &rayPosAndNear, &rayDirAndFar);
-
-  kernel_RayTrace(tidX, tidY, &rayPosAndNear, &rayDirAndFar, out_sample);
-}
-
-void RayTracer::CastSingleRay(uint32_t tidX, uint32_t tidY, float x_offset, float y_offset, SampleInfo* out_sample)
-{
-  LiteMath::float4 rayPosAndNear, rayDirAndFar;
-  kernel_InitEyeRay(tidX + x_offset, tidY + y_offset, &rayPosAndNear, &rayDirAndFar);
-
-  kernel_RayTrace(0, 0, &rayPosAndNear, &rayDirAndFar, out_sample);
-}
-
-void RayTracer::CastSingleRayForSurfaceId(uint32_t tidX, uint32_t tidY, float x_offset, float y_offset, uint32_t* out_surfaceId)
-{
-  LiteMath::float4 rayPosAndNear, rayDirAndFar;
-  kernel_InitEyeRay(float(tidX) + x_offset, float(tidY) + y_offset, &rayPosAndNear, &rayDirAndFar);
-  kernel_RayTraceID(tidX, tidY, &rayPosAndNear, &rayDirAndFar, out_surfaceId);
-}
 
 void RayTracer::kernel_InitEyeRay(float tidX, float tidY, LiteMath::float4* rayPosAndNear, LiteMath::float4* rayDirAndFar)
 {
@@ -72,20 +51,8 @@ void RayTracer::kernel_InitEyeRay(float tidX, float tidY, LiteMath::float4* rayP
   *rayDirAndFar  = to_float4(rayDir, FLT_MAX);
 }
 
-
 void RayTracer::kernel_RayTrace(uint32_t tidX, uint32_t tidY, const LiteMath::float4* rayPosAndNear,
-                                const LiteMath::float4* rayDirAndFar, uint32_t* out_color)
-{
-  const LiteMath::float4 rayPos = *rayPosAndNear;
-  const LiteMath::float4 rayDir = *rayDirAndFar ;
-
-  CRT_Hit hit = m_pAccelStruct->RayQuery_NearestHit(rayPos, rayDir);
-
-  out_color[tidY * m_width + tidX] = m_palette[hit.instId % palette_size];
-}
-
-void RayTracer::kernel_RayTrace(uint32_t tidX, uint32_t tidY, const LiteMath::float4* rayPosAndNear,
-                                const LiteMath::float4* rayDirAndFar, SampleInfo* out_sample)
+                                const LiteMath::float4* rayDirAndFar, SurfaceInfo* out_sample)
 {
   const LiteMath::float4 rayPos = *rayPosAndNear;
   const LiteMath::float4 rayDir = *rayDirAndFar ;
@@ -94,16 +61,6 @@ void RayTracer::kernel_RayTrace(uint32_t tidX, uint32_t tidY, const LiteMath::fl
 
   out_sample[tidY * m_width + tidX].color = m_palette[hit.instId % palette_size];
   out_sample[tidY * m_width + tidX].objId = (hit.instId << 16) | hit.geomId;
-}
-
-void RayTracer::kernel_RayTraceID(uint32_t tidX, uint32_t tidY, const LiteMath::float4* rayPosAndNear, const LiteMath::float4* rayDirAndFar, uint32_t* out_surfId)
-{
-  const LiteMath::float4 rayPos = *rayPosAndNear;
-  const LiteMath::float4 rayDir = *rayDirAndFar ;
-
-  CRT_Hit hit = m_pAccelStruct->RayQuery_NearestHit(rayPos, rayDir);
-  //out_surfId[tidY * m_width + tidX] = (hit.geomId << 24) | (hit.instId & 0x00FFFFFF);
-  out_surfId[0] = (hit.geomId << 24) | (hit.instId & 0x00FFFFFF);
 }
 
 
@@ -150,8 +107,8 @@ bool RayTracer::LoadScene(const std::string& path)
 
 LiteMath::float3 EyeRayDir(float x, float y, float w, float h, LiteMath::float4x4 a_mViewProjInv)
 {
-  LiteMath::float4 pos = LiteMath::make_float4(2.0f * (x + 0.5f) / w - 1.0f,
-                                               2.0f * (y + 0.5f) / h - 1.0f,
+  LiteMath::float4 pos = LiteMath::make_float4(2.0f*(x/w) - 1.0f,
+                                               2.0f*(y/h) - 1.0f,
                                                0.0f,
                                                1.0f );
 

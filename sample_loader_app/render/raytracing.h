@@ -8,7 +8,7 @@
 #include "LiteMath.h"
 #include "CrossRT.h"
 
-struct SampleInfo
+struct SurfaceInfo
 {
   uint32_t objId;
   uint32_t color;
@@ -18,21 +18,14 @@ class RayTracer
 {
 public:
   RayTracer(uint32_t a_width, uint32_t a_height) : m_width(a_width), m_height(a_height) {}
-
   bool LoadScene(const std::string& path);
-
-  void CastSingleRay(uint32_t tidX, uint32_t tidY, uint32_t* out_color);
-  void CastSingleRay(uint32_t tidX, uint32_t tidY, SampleInfo* out_sample);
-  void CastSingleRay(uint32_t tidX, uint32_t tidY, float x_offset, float y_offset, SampleInfo* out_sample);
-
-  void CastSingleRayForSurfaceId(uint32_t tidX, uint32_t tidY, float x_offset, float y_offset, uint32_t* out_surfaceId);
-
-  void kernel_InitEyeRay(float tidX, float tidY, LiteMath::float4* rayPosAndNear, LiteMath::float4* rayDirAndFar);
-  void kernel_RayTrace(uint32_t tidX, uint32_t tidY, const LiteMath::float4* rayPosAndNear, const LiteMath::float4* rayDirAndFar, uint32_t* out_color);
-  void kernel_RayTraceID(uint32_t tidX, uint32_t tidY, const LiteMath::float4* rayPosAndNear, const LiteMath::float4* rayDirAndFar, uint32_t* out_color);
-  void kernel_RayTrace(uint32_t tidX, uint32_t tidY, const LiteMath::float4* rayPosAndNear, const LiteMath::float4* rayDirAndFar, SampleInfo* out_sample);
+  SurfaceInfo CastSingleRay(float x, float y);
 
 protected:
+
+  void kernel_InitEyeRay(float tidX, float tidY, LiteMath::float4* rayPosAndNear, LiteMath::float4* rayDirAndFar);
+  void kernel_RayTrace(uint32_t tidX, uint32_t tidY, const LiteMath::float4* rayPosAndNear, const LiteMath::float4* rayDirAndFar, SurfaceInfo* out_sample);
+
   uint32_t m_width;
   uint32_t m_height;
 
