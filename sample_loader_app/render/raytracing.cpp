@@ -39,6 +39,12 @@ SurfaceInfo RayTracer::CastSingleRay(float x, float y)
   return outSam;
 }
 
+void RayTracer::CastSingleRay(uint32_t tidX, uint32_t tidY, float x_offset, float y_offset, SurfaceInfo* out_sample)
+{
+  LiteMath::float4 rayPosAndNear, rayDirAndFar;
+  kernel_InitEyeRay(tidX + x_offset, tidY + y_offset, &rayPosAndNear, &rayDirAndFar);
+  kernel_RayTrace(0, 0, &rayPosAndNear, &rayDirAndFar, out_sample);
+}
 
 void RayTracer::kernel_InitEyeRay(float tidX, float tidY, LiteMath::float4* rayPosAndNear, LiteMath::float4* rayDirAndFar)
 {
