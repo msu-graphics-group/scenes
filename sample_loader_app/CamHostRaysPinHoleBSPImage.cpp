@@ -90,7 +90,7 @@ class PinHoleBSPImageAccum : public IHostRaysAPI
 public:
   PinHoleBSPImageAccum() { hr_qmc::init(table); m_globalCounter = 0; }
   
-  std::string outImagePath = "";
+  std::string outImageFolder;
 
   void SetParameters(int a_width, int a_height, const float a_projInvMatrix[16], const wchar_t* a_camNodeText) override
   {
@@ -107,7 +107,7 @@ public:
 
     //std::string scenePath = "/home/frol/PROG/msu-graphics-group/scenes/01_simple_scenes/instanced_objects.xml"; //#TODO: pass scene path here!
     std::string scenePath = "/home/frol/PROG/msu-graphics-group/scenes/01_simple_scenes/bunny_cornell.xml";       //#TODO: pass scene path here!
-    outImagePath          = "/home/frol/PROG/msu-graphics-group/scenes/sample_loader_app/z_out_bsp.png";
+    outImageFolder        = "/home/frol/PROG/msu-graphics-group/scenes/sample_loader_app";
     
     std::cout << "[PinHoleBSP]: loading scene from " << scenePath.c_str() << std::endl;
     auto pRayTracerCPU = std::make_shared<RayTracer>(a_width, a_height);
@@ -125,6 +125,7 @@ public:
   
   std::unique_ptr<BSPImage4f> m_pFrameBuffer = nullptr;
   std::vector<PipeThrough>    m_pipeline[HOST_RAYS_PIPELINE_LENGTH];
+  float4*                     m_hydraFB = nullptr;
 
   unsigned int table[hr_qmc::QRNG_DIMENSIONS][hr_qmc::QRNG_RESOLUTION];
   unsigned int m_globalCounter = 0;
@@ -167,7 +168,7 @@ void PinHoleBSPImageAccum::MakeRaysBlock(RayPart1* out_rayPosAndNear, RayPart2* 
 
   const int putID = passId % HOST_RAYS_PIPELINE_LENGTH;
 
-  #pragma omp parallel for
+  #pragma omp parallel for default(none) shared (m_pipeline,m_projInv,table,m_globalCounter,m_fwidth,m_fheight,putID,in_blockSize,out_rayPosAndNear,out_rayDirAndFar)
   for(int i=0;i<int(in_blockSize);i++)
   {
     const float rndX = hr_qmc::rndFloat(m_globalCounter+i, 0, table[0]);
@@ -194,7 +195,8 @@ void PinHoleBSPImageAccum::MakeRaysBlock(RayPart1* out_rayPosAndNear, RayPart2* 
     p1.origin[0]   = ray_pos.x;
     p1.origin[1]   = ray_pos.y;
     p1.origin[2]   = ray_pos.z;
-    p1.xyPosPacked = myPackXY1616(int(m_fwidth*rndX - 0.5f), int(m_fheight*rndY - 0.5f));
+    p1.xyPosPacked = myPackXY1616(std::max<int>(int(m_fwidth*rndX  - 0.5f), 0), 
+                                  std::max<int>(int(m_fheight*rndY - 0.5f), 0));
    
     RayPart2 p2;
     p2.direction[0] = ray_dir.x;
@@ -244,11 +246,19 @@ void PinHoleBSPImageAccum::AddSamplesContribution(float* out_color4f, const floa
     subPixel.color[2] += color[2];
     subPixel.hits++;
 
-    //assert(passData.packedIndex == packedIndex);           ///<! check that we actually took data from 'm_pipeline' for right ray
+    //assert(passData.packedIndex == packedIndex);         ///<! check that we actually took data from 'm_pipeline' for right ray
 
-    const int x      = (packedIndex & 0x0000FFFF);         ///<! extract x position from color.w
-    const int y      = (packedIndex & 0xFFFF0000) >> 16;   ///<! extract y position from color.w
-    const int offset = (a_height-y-1)*a_width + x;
+    int x      = (packedIndex & 0x0000FFFF);         ///<! extract x position from color.w
+    int y      = (packedIndex & 0xFFFF0000) >> 16;   ///<! extract y position from color.w
+    
+    x = int(m_fwidth*passData.x  - 0.5f);
+    y = int(m_fheight*passData.y - 0.5f);
+
+    x = std::max<int>(0, std::min<int>(x,m_width -1));
+    y = std::max<int>(0, std::min<int>(y,m_height-1));
+
+    //const int offset = (a_height-y-1)*a_width + x;
+    const int offset = y*a_width + x;
 
     if (x >= 0 && y >= 0 && x < int(a_width) && y < int(a_height))
     {
@@ -259,13 +269,14 @@ void PinHoleBSPImageAccum::AddSamplesContribution(float* out_color4f, const floa
   }
 
   m_spp += float(in_blockSize) / float(a_width*a_height);
+  m_hydraFB = out_color;
 }
 
 void PinHoleBSPImageAccum::FinishRendering()
 { 
   std::cout << "[PinHoleBSPImageAccum]::FinishRendering is called" << std::endl; 
 
-  std::vector<uint32_t> imageLDR(m_width*m_height);
+  std::vector<uint32_t> imageLDR(m_width*m_height), imageLDROriginal(m_width*m_height);
 
   const float invSPP = 1.0f/m_spp;
 
@@ -305,10 +316,22 @@ void PinHoleBSPImageAccum::FinishRendering()
       const float b1 = std::pow(b, 1.0f/2.2f);
 
       imageLDR[y1*m_width+x1] = 0xFF000000 | (uint32_t(r1*255.0f) << 0) | (uint32_t(g1*255.0f) << 8) | (uint32_t(b1*255.0f) << 16);
+      
+      float4 colorOriginal = LiteMath::clamp(m_hydraFB[y1*m_width+x1]*invSPP, 0.0f, 1.0f);
+      const float r2 = std::pow(colorOriginal.x, 1.0f/2.2f);
+      const float g2 = std::pow(colorOriginal.y, 1.0f/2.2f);
+      const float b2 = std::pow(colorOriginal.z, 1.0f/2.2f);
+
+      imageLDR[y1*m_width+x1]         = 0xFF000000 | (uint32_t(r1*255.0f) << 0) | (uint32_t(g1*255.0f) << 8) | (uint32_t(b1*255.0f) << 16);
+      imageLDROriginal[y1*m_width+x1] = 0xFF000000 | (uint32_t(r2*255.0f) << 0) | (uint32_t(g2*255.0f) << 8) | (uint32_t(b2*255.0f) << 16);
     }
   }
 
-  saveImageLDR(outImagePath.c_str(), imageLDR, m_width, m_height, 4);
+  std::string out1 = outImageFolder + "/z_out1_bsp.png";
+  std::string out2 = outImageFolder + "/z_out2_ori.png";
+
+  saveImageLDR(out1.c_str(), imageLDR, m_width, m_height, 4);
+  saveImageLDR(out2.c_str(), imageLDROriginal, m_width, m_height, 4);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
