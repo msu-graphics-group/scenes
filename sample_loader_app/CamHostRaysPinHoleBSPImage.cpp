@@ -48,8 +48,8 @@ static inline bool close_tex_data(SubPixelElement a, SubPixelElement b)
   return a.objId == b.objId;
 }
 
-using BSPImage4f = BSPBasedSampler<SubPixelElement>;
-//using BSPImage4f = StupidImageSampler<SubPixelElement>;
+//using BSPImage4f = BSPBasedSampler<SubPixelElement>;
+using BSPImage4f = StupidImageSampler<SubPixelElement>;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -125,7 +125,7 @@ public:
   
   std::unique_ptr<BSPImage4f> m_pFrameBuffer = nullptr;
   std::vector<PipeThrough>    m_pipeline[HOST_RAYS_PIPELINE_LENGTH];
-  float4*                     m_hydraFB = nullptr;
+  //float4*                     m_hydraFB = nullptr;
 
   unsigned int table[hr_qmc::QRNG_DIMENSIONS][hr_qmc::QRNG_RESOLUTION];
   unsigned int m_globalCounter = 0;
@@ -246,19 +246,18 @@ void PinHoleBSPImageAccum::AddSamplesContribution(float* out_color4f, const floa
     subPixel.color[2] += color[2];
     subPixel.hits++;
 
-    //assert(passData.packedIndex == packedIndex);         ///<! check that we actually took data from 'm_pipeline' for right ray
-
-    int x      = (packedIndex & 0x0000FFFF);         ///<! extract x position from color.w
-    int y      = (packedIndex & 0xFFFF0000) >> 16;   ///<! extract y position from color.w
+    //assert(passData.packedIndex == packedIndex);  ///<! check that we actually took data from 'm_pipeline' for right ray
+    //int x = (packedIndex & 0x0000FFFF);           ///<! extract x position from color.w
+    //int y = (packedIndex & 0xFFFF0000) >> 16;     ///<! extract y position from color.w
     
-    x = int(m_fwidth*passData.x  - 0.5f);
-    y = int(m_fheight*passData.y - 0.5f);
+    int x = int(m_fwidth*passData.x  + 0.0f);
+    int y = int(m_fheight*passData.y + 0.0f);
 
     x = std::max<int>(0, std::min<int>(x,m_width -1));
     y = std::max<int>(0, std::min<int>(y,m_height-1));
 
-    //const int offset = (a_height-y-1)*a_width + x;
-    const int offset = y*a_width + x;
+    const int offset = (a_height-y-1)*a_width + x;
+    //const int offset = y*a_width + x;
 
     if (x >= 0 && y >= 0 && x < int(a_width) && y < int(a_height))
     {
@@ -269,14 +268,14 @@ void PinHoleBSPImageAccum::AddSamplesContribution(float* out_color4f, const floa
   }
 
   m_spp += float(in_blockSize) / float(a_width*a_height);
-  m_hydraFB = out_color;
+  //m_hydraFB = out_color;
 }
 
 void PinHoleBSPImageAccum::FinishRendering()
 { 
   std::cout << "[PinHoleBSPImageAccum]::FinishRendering is called" << std::endl; 
 
-  std::vector<uint32_t> imageLDR(m_width*m_height), imageLDROriginal(m_width*m_height);
+  std::vector<uint32_t> imageLDR(m_width*m_height);
 
   const float invSPP = 1.0f/m_spp;
 
@@ -317,21 +316,20 @@ void PinHoleBSPImageAccum::FinishRendering()
 
       imageLDR[y1*m_width+x1] = 0xFF000000 | (uint32_t(r1*255.0f) << 0) | (uint32_t(g1*255.0f) << 8) | (uint32_t(b1*255.0f) << 16);
       
-      float4 colorOriginal = LiteMath::clamp(m_hydraFB[y1*m_width+x1]*invSPP, 0.0f, 1.0f);
-      const float r2 = std::pow(colorOriginal.x, 1.0f/2.2f);
-      const float g2 = std::pow(colorOriginal.y, 1.0f/2.2f);
-      const float b2 = std::pow(colorOriginal.z, 1.0f/2.2f);
-
-      imageLDR[y1*m_width+x1]         = 0xFF000000 | (uint32_t(r1*255.0f) << 0) | (uint32_t(g1*255.0f) << 8) | (uint32_t(b1*255.0f) << 16);
-      imageLDROriginal[y1*m_width+x1] = 0xFF000000 | (uint32_t(r2*255.0f) << 0) | (uint32_t(g2*255.0f) << 8) | (uint32_t(b2*255.0f) << 16);
+      //float4 colorOriginal = LiteMath::clamp(m_hydraFB[y1*m_width+x1]*invSPP, 0.0f, 1.0f);
+      //const float r2 = std::pow(colorOriginal.x, 1.0f/2.2f);
+      //const float g2 = std::pow(colorOriginal.y, 1.0f/2.2f);
+      //const float b2 = std::pow(colorOriginal.z, 1.0f/2.2f);
+      //imageLDR[y1*m_width+x1]         = 0xFF000000 | (uint32_t(r1*255.0f) << 0) | (uint32_t(g1*255.0f) << 8) | (uint32_t(b1*255.0f) << 16);
+      //imageLDROriginal[y1*m_width+x1] = 0xFF000000 | (uint32_t(r2*255.0f) << 0) | (uint32_t(g2*255.0f) << 8) | (uint32_t(b2*255.0f) << 16);
     }
   }
 
   std::string out1 = outImageFolder + "/z_out1_bsp.png";
-  std::string out2 = outImageFolder + "/z_out2_ori.png";
+  //std::string out2 = outImageFolder + "/z_out2_ori.png";
 
   saveImageLDR(out1.c_str(), imageLDR, m_width, m_height, 4);
-  saveImageLDR(out2.c_str(), imageLDROriginal, m_width, m_height, 4);
+  //saveImageLDR(out2.c_str(), imageLDROriginal, m_width, m_height, 4);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
