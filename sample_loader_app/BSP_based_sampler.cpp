@@ -17,10 +17,10 @@ std::vector<float> gen_hammersley(uint32_t cnt, float radius)
     values[2 * k + 0] = u;
     values[2 * k + 1] = v;
   }
-  //for (float& v : values)
-  //{
-  //  v = (v - 0.5f) * 2.0f * radius;
-  //}
+  for (float& v : values)
+  {
+    v = (v - 0.5f) * 2.0f * radius;
+  }
   return values;
 }
 
