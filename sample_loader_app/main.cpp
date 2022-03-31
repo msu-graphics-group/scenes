@@ -94,15 +94,16 @@ int main(int argc, char **argv)
       image[j*WIDTH+i] = pRayTracerCPU->CastSingleRay(float(i)+0.5f, float(j)+0.5f).color;
 
   saveImageLDR("00_output_aliased.png", image, WIDTH, HEIGHT, 4);
+  memset(image.data(), 0, sizeof(uint32_t)*size_t(WIDTH*HEIGHT));
   
+  const uint32_t aaSamples     = 4;
   
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  const uint32_t aaSamples     = 4;
   const uint32_t refSubSamples = aaSamples*aaSamples;
   std::vector<float> hammSamples(refSubSamples * 2);
   PlaneHammersley(hammSamples.data(), refSubSamples);
   for (float& offset : hammSamples)
-    offset = offset * 2.0f * radius;
+    offset = (offset) * 2.0f * radius;
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   std::cout << "[main]: compute 'antialiased' reference image ... " << std::endl;
@@ -136,6 +137,7 @@ int main(int argc, char **argv)
   }
 
   saveImageLDR("01_output_antialiased.png", image, WIDTH, HEIGHT, 4);
+  memset(image.data(), 0, sizeof(uint32_t)*size_t(WIDTH*HEIGHT));
 
   BSPBasedSampler<SurfaceInfo>::Config config;
   config.width = WIDTH;
@@ -169,12 +171,12 @@ int main(int argc, char **argv)
       r /= aaSamples * aaSamples;
       g /= aaSamples * aaSamples;
       b /= aaSamples * aaSamples;
-      image[j+WIDTH+i] = (0xFF000000 | ((uint32_t)(r) << 16) | ((uint32_t)(g) << 8) | (uint32_t)b);
+      image[j*WIDTH+i] = (0xFF000000 | ((uint32_t)(r) << 16) | ((uint32_t)(g) << 8) | (uint32_t)b);
     }
   }
 
   saveImageLDR("02_output_antialiased_bsp.png", image, WIDTH, HEIGHT, 4);
-
+  memset(image.data(), 0, sizeof(uint32_t)*size_t(WIDTH*HEIGHT));
 
   // now check the same with our "stupid subpixel image" approach
   //
@@ -188,6 +190,7 @@ int main(int argc, char **argv)
     for (uint32_t i = 0; i < WIDTH; ++i)
     {
       float r = 0, g = 0, b = 0;
+      
       for (uint32_t y = 0; y < aaSamples; ++y)
       {
         for (uint32_t x = 0; x < aaSamples; ++x)
@@ -200,6 +203,7 @@ int main(int argc, char **argv)
           b += (sample.color & 0xFF);
         }
       }
+
       r /= aaSamples * aaSamples;
       g /= aaSamples * aaSamples;
       b /= aaSamples * aaSamples;
@@ -208,6 +212,7 @@ int main(int argc, char **argv)
   }
 
   saveImageLDR("03_output_antialiased_stupid.png", image, WIDTH, HEIGHT, 4);
+  memset(image.data(), 0, sizeof(uint32_t)*size_t(WIDTH*HEIGHT));
 
   return 0;
 }
