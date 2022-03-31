@@ -48,8 +48,8 @@ static inline bool close_tex_data(SubPixelElement a, SubPixelElement b)
   return a.objId == b.objId;
 }
 
-//using BSPImage4f = BSPBasedSampler<SubPixelElement>;
-using BSPImage4f = StupidImageSampler<SubPixelElement>;
+using BSPImage4f = BSPBasedSampler<SubPixelElement>;
+//using BSPImage4f = StupidImageSampler<SubPixelElement>;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -240,7 +240,12 @@ void PinHoleBSPImageAccum::AddSamplesContribution(float* out_color4f, const floa
       //assert(passData.packedIndex == packedIndex);
     }
 
-    auto& subPixel = m_pFrameBuffer->access(passData.x, passData.y);
+    float tx = passData.x; // + 0.5f/float(m_width);             // !!! WRONG SUBPIXEL SHIFT !!!
+    float ty = passData.y; // + 0.5f/float(m_height);            // !!! WRONG SUBPIXEL SHIFT !!!
+    tx = std::max<float>(0.0f, std::min<float>(tx, 1.0f));
+    ty = std::max<float>(0.0f, std::min<float>(ty, 1.0f));
+
+    auto& subPixel = m_pFrameBuffer->access(tx, ty);
     subPixel.color[0] += color[0];
     subPixel.color[1] += color[1];
     subPixel.color[2] += color[2];
@@ -294,6 +299,10 @@ void PinHoleBSPImageAccum::FinishRendering()
         {
           float x_coord = (float)(x + x1 * aaSamples) / float(aaSamples * m_width);
           float y_coord = (float)(y + y1 * aaSamples) / float(aaSamples * m_height);
+
+          x_coord = std::max<float>(std::min<float>(x_coord, 1.0f), 0.0f);
+          y_coord = std::max<float>(std::min<float>(y_coord, 1.0f), 0.0f);
+
           //x_coord = LiteMath::clamp(x_coord, 0.0f, 0.995f);
           //y_coord = LiteMath::clamp(y_coord, 0.0f, 0.995f);
           SubPixelElement sample = m_pFrameBuffer->sample(x_coord, y_coord);
