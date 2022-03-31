@@ -91,7 +91,7 @@ int main(int argc, char **argv)
   #pragma omp parallel for default(none) shared(HEIGHT, WIDTH, image, pRayTracerCPU)
   for (uint32_t j = 0; j < HEIGHT; ++j)
     for (uint32_t i = 0; i < WIDTH; ++i)
-      image[j*WIDTH+i] = pRayTracerCPU->CastSingleRay(float(i), float(j)).color;
+      image[j*WIDTH+i] = pRayTracerCPU->CastSingleRay(float(i)+0.5f, float(j)+0.5f).color;
 
   saveImageLDR("00_output_aliased.png", image, WIDTH, HEIGHT, 4);
   
@@ -102,7 +102,7 @@ int main(int argc, char **argv)
   std::vector<float> hammSamples(refSubSamples * 2);
   PlaneHammersley(hammSamples.data(), refSubSamples);
   for (float& offset : hammSamples)
-    offset = (offset - 0.5f) * 2.0f * radius;
+    offset = offset * 2.0f * radius;
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   std::cout << "[main]: compute 'antialiased' reference image ... " << std::endl;

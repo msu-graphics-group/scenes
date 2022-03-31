@@ -352,7 +352,7 @@ public:
     if (specialTexels.count(texel_id) == 0)
       return singleRayData[texel_id];
 
-    return TexType(); // #VF: for debug
+    //return TexType(); // #VF: for debug
 
     const float x_local = ((x * config.width - x_texel) - 0.5f) * 2.f * config.radius;
     const float y_local = ((y * config.height - y_texel) - 0.5f) * 2.f * config.radius;

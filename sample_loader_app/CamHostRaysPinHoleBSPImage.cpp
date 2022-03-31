@@ -240,8 +240,8 @@ void PinHoleBSPImageAccum::AddSamplesContribution(float* out_color4f, const floa
       //assert(passData.packedIndex == packedIndex);
     }
 
-    float tx = passData.x; // + 0.5f/float(m_width);             // !!! WRONG SUBPIXEL SHIFT !!!
-    float ty = passData.y; // + 0.5f/float(m_height);            // !!! WRONG SUBPIXEL SHIFT !!!
+    float tx = passData.x + 0.5f/float(m_width);             // !!! WRONG SUBPIXEL SHIFT !!!
+    float ty = passData.y + 0.5f/float(m_height);            // !!! WRONG SUBPIXEL SHIFT !!!
     tx = std::max<float>(0.0f, std::min<float>(tx, 1.0f));
     ty = std::max<float>(0.0f, std::min<float>(ty, 1.0f));
 
@@ -255,11 +255,11 @@ void PinHoleBSPImageAccum::AddSamplesContribution(float* out_color4f, const floa
     //int x = (packedIndex & 0x0000FFFF);           ///<! extract x position from color.w
     //int y = (packedIndex & 0xFFFF0000) >> 16;     ///<! extract y position from color.w
     
-    int x = int(m_fwidth*passData.x  + 0.0f);
-    int y = int(m_fheight*passData.y + 0.0f);
+    int x = int(m_fwidth*tx  - 0.0f);
+    int y = int(m_fheight*ty - 0.0f);
 
-    x = std::max<int>(0, std::min<int>(x,m_width -1));
-    y = std::max<int>(0, std::min<int>(y,m_height-1));
+    x = std::max<int>(0, std::min<int>(x, m_width -1));
+    y = std::max<int>(0, std::min<int>(y, m_height-1));
 
     const int offset = (a_height-y-1)*a_width + x;
     //const int offset = y*a_width + x;
