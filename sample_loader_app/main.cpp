@@ -78,13 +78,6 @@ int main(int argc, char **argv)
   if(!loaded)
     return -1;
 
-  float radius = 0.5;
-  for (int i = 1; i < argc - 1; ++i)
-  {
-    if (strcmp("-radius", argv[i]) == 0)
-      radius = std::atof(argv[i + 1]);
-  }
-
   std::vector<uint32_t> image(WIDTH*HEIGHT);
 
   std::cout << "[main]: compute 'plain' image ... " << std::endl;
@@ -102,8 +95,6 @@ int main(int argc, char **argv)
   const uint32_t refSubSamples = aaSamples*aaSamples;
   std::vector<float> hammSamples(refSubSamples * 2);
   PlaneHammersley(hammSamples.data(), refSubSamples);
-  for (float& offset : hammSamples)
-    offset = (offset) * 2.0f * radius;
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   std::cout << "[main]: compute 'antialiased' reference image ... " << std::endl;
@@ -120,8 +111,7 @@ int main(int argc, char **argv)
 
       for (int k = 0; k < int(refSubSamples); ++k)
       {
-        SurfaceInfo sample = pRayTracerCPU->CastSingleRay(float(i) + hammSamples[k * 2 + 0], 
-                                                          float(j) + hammSamples[k * 2 + 1]);
+        SurfaceInfo sample = pRayTracerCPU->CastSingleRay(float(i) + hammSamples[k * 2 + 0], float(j) + hammSamples[k * 2 + 1]);
 
         gt_red   += float(sample.color & 0xFF)         / 255.0f;
         gt_green += float((sample.color >> 8) & 0xFF)  / 255.0f;
@@ -140,9 +130,8 @@ int main(int argc, char **argv)
   memset(image.data(), 0, sizeof(uint32_t)*size_t(WIDTH*HEIGHT));
 
   BSPBasedSampler<SurfaceInfo>::Config config;
-  config.width = WIDTH;
+  config.width  = WIDTH;
   config.height = HEIGHT;
-  config.windowHalfSize = 1;
   config.radius = 0.5f;
   config.additionalSamplesCnt = 32;
   BSPBasedSampler<SurfaceInfo> sampler(config);

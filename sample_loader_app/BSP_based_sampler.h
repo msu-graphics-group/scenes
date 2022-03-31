@@ -20,9 +20,8 @@ class BSPBasedSampler
   struct Config
   {
     uint32_t width, height;
-    uint32_t windowHalfSize = 1;
-    uint32_t additionalSamplesCnt = 128;
-    float radius = 1.5f;
+    uint32_t additionalSamplesCnt ;
+    float radius;
   } config;
   private:
 
@@ -192,7 +191,6 @@ public:
   {
     config.width          = a_width;
     config.height         = a_height;
-    config.windowHalfSize = 1;
     config.radius         = 0.5f;
     config.additionalSamplesCnt = 64;
     singleRayData.resize(config.width * config.height);
@@ -231,7 +229,7 @@ public:
       }
     }
 
-    const uint32_t samplesCount = config.additionalSamplesCnt + 1; //#vf: why +1 ????? !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    const uint32_t samplesCount = config.additionalSamplesCnt; 
 
     // Process suspicious texels
     std::vector<TexType> samples;
@@ -346,8 +344,8 @@ public:
 
   TexType sample(float x, float y)
   {
-    const uint32_t x_texel = x * config.width;
-    const uint32_t y_texel = y * config.height;
+    const uint32_t x_texel  = uint32_t( x * float(config.width)  );
+    const uint32_t y_texel  = uint32_t( y * float(config.height) );
     const uint32_t texel_id = y_texel * config.width + x_texel;
     if (specialTexels.count(texel_id) == 0)
       return singleRayData[texel_id];
@@ -382,8 +380,9 @@ public:
 
   TexType& access(float x, float y)
   {
-    const uint32_t x_texel = x * config.width;
-    const uint32_t y_texel = y * config.height;
+    const uint32_t x_texel  = uint32_t( x * float(config.width)  );
+    const uint32_t y_texel  = uint32_t( y * float(config.height) );
+    
     const uint32_t texel_id = y_texel * config.width + x_texel;
     if (specialTexels.count(texel_id) == 0)
       return singleRayData[texel_id];
