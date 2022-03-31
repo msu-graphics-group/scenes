@@ -26,6 +26,13 @@ class BSPBasedSampler
   } config;
   private:
 
+  struct uint2
+  {
+    uint2() : x(0), y(0) {}
+    uint2(uint32_t a_x, uint32_t a_y) : x(a_x), y(a_y) {}
+    uint32_t x,y;
+  };
+
   std::vector<TexType> singleRayData;
   std::vector<float> hammSamples;
   using Line = std::array<float, 3>;
@@ -214,22 +221,18 @@ public:
     }
 
     // Collect suspicious (aliased, with high divergence in neighbourhood) texels.
-    std::vector<uint32_t> suspiciosTexelIds;
-    for (int i = 0; i < config.width; ++i) {
-      for (int j = 0; j < config.height; ++j) {
+    std::vector<uint2> suspiciosTexelIds;
+    for (int i = 0; i < int(config.width); ++i) {
+      for (int j = 0; j < int(config.height); ++j) {
         bool needResample = false;
         const TexType texel = singleRayData[i * config.width + j];
         for (int x = std::max(i - 1, 0); x <= std::min(i + 1, (int)config.width - 1) && !needResample; ++x)
         {
           for (int y = std::max(j - 1, 0); y <= std::min(j + 1, (int)config.height - 1) && !needResample; ++y)
-          {
             needResample = !close_tex_data(singleRayData[y * config.width + x], texel);
-          }
         }
         if (needResample)
-        {
-          suspiciosTexelIds.push_back(j * config.width + i);
-        }
+          suspiciosTexelIds.push_back(uint2(i,j));
       }
     }
 
@@ -238,12 +241,12 @@ public:
     // Process suspicious texels
     std::vector<TexType> samples;
     samples.reserve(samplesCount);
-    for (uint32_t texel_idx : suspiciosTexelIds)
+    for (auto texel_idx : suspiciosTexelIds)
     {
       samples.clear();
-      samples.push_back(singleRayData[texel_idx]);
-      const uint32_t texel_x = texel_idx % config.width;
-      const uint32_t texel_y = texel_idx / config.width;
+      samples.push_back(singleRayData[texel_idx.y*config.width+texel_idx.x]);
+      const uint32_t texel_x = texel_idx.x;
+      const uint32_t texel_y = texel_idx.y;
       // Make new samples
       for (uint32_t i = 0; i < config.additionalSamplesCnt; ++i)
       {
@@ -341,7 +344,7 @@ public:
       }
       if (!lines.empty())
       {
-        specialTexels[texel_idx] = construct_bsp(lines, labels, samplesPositions, referenceSamples);
+        specialTexels[texel_idx.y*config.width+texel_idx.x] = construct_bsp(lines, labels, samplesPositions, referenceSamples);
         subtexelsCollection.insert(subtexelsCollection.end(), referenceSamples.begin(), referenceSamples.end());
       }
     }

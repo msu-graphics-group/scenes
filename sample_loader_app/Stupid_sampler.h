@@ -77,8 +77,8 @@ class StupidImageSampler
     {
       const uint32_t px = UnpackX(pair.first);
       const uint32_t py = UnpackY(pair.first);
-      const float   fpx = float(px);
-      const float   fpy = float(py);
+      //const float   fpx = float(px);
+      //const float   fpy = float(py);
 
       auto& subPixel = pair.second;
       for(uint32_t sy=0; sy < SUBPIXEL_SIZE_Y; sy++)
