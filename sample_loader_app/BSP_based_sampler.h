@@ -352,15 +352,15 @@ public:
 
   TexType sample(float x, float y)
   {
-    const uint32_t x_texel = x * config.width;
-    const uint32_t y_texel = y * config.height;
+    const uint32_t x_texel = x * config.width + 0.5f;
+    const uint32_t y_texel = y * config.height + 0.5f;
     const uint32_t texel_id = y_texel * config.width + x_texel;
     if (specialTexels.count(texel_id) == 0)
       return singleRayData[texel_id];
 
     //return TexType();
 
-    const float x_local = ((x * config.width - x_texel) - 0.5f) * 2.f * config.radius;
+    const float x_local = ((x * config.width  - x_texel) - 0.5f) * 2.f * config.radius;
     const float y_local = ((y * config.height - y_texel) - 0.5f) * 2.f * config.radius;
 
     uint32_t currentNode = specialTexels[texel_id];
@@ -388,13 +388,13 @@ public:
 
   TexType& access(float x, float y)
   {
-    const uint32_t x_texel = x * config.width;
-    const uint32_t y_texel = y * config.height;
+    const uint32_t x_texel = x * config.width + 0.5f;
+    const uint32_t y_texel = y * config.height + 0.5f;
     const uint32_t texel_id = y_texel * config.width + x_texel;
     if (specialTexels.count(texel_id) == 0)
       return singleRayData[texel_id];
     
-    const float x_local = ((x * config.width - x_texel) - 0.5f) * 2.f * config.radius;
+    const float x_local = ((x * config.width  - x_texel) - 0.5f) * 2.f * config.radius;
     const float y_local = ((y * config.height - y_texel) - 0.5f) * 2.f * config.radius;
 
     uint32_t currentNode = specialTexels[texel_id];
