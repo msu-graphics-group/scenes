@@ -9,11 +9,8 @@ class RTSampler
 public:
   RTSampler(std::shared_ptr<RayTracer> tr, uint32_t w, uint32_t h) : tracer(tr), width(w), height(h) {}
 
-  SurfaceInfo sample(float x, float y)     const { return tracer->CastSingleRay(x * float(width)  + 0.5f, 
-                                                                                y * float(height) + 0.5f); }
-
-  SurfaceInfo fetch(uint32_t x, uint32_t y) const { return tracer->CastSingleRay(float(x)+0.5f, 
-                                                                                 float(y)+0.5f); }
+  SurfaceInfo sample(float x, float y)      const { return tracer->CastSingleRay(x * float(width), y * float(height)); }
+  SurfaceInfo fetch(uint32_t x, uint32_t y) const { return tracer->CastSingleRay(float(x)+0.5f, float(y)+0.5f); }
 };
 
 inline bool close_tex_data(SurfaceInfo a, SurfaceInfo b)

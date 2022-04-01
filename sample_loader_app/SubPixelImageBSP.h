@@ -203,6 +203,11 @@ public:
     hammSamples = gen_hammersley(config.additionalSamplesCnt, config.radius);
   }
 
+  struct uint2 {
+    uint2() : x(0), y(0) {}
+    uint2(uint32_t a_x, uint32_t a_y) : x(a_x), y(a_y) {}
+    uint32_t x, y;
+  };
 
   template<typename BaseSampler>
   void configure(const BaseSampler &sampler)
@@ -215,22 +220,19 @@ public:
     }
 
     // Collect suspicious (aliased, with high divergence in neighbourhood) texels.
-    std::vector<uint32_t> suspiciosTexelIds;
+    std::vector<uint2> suspiciosTexelIds;
     for (int i = 0; i < int(config.width); ++i) {
       for (int j = 0; j < int(config.height); ++j) {
-        bool needResample = false;
+        
+        bool needResample   = false;
         const TexType texel = singleRayData[i * config.width + j];
+        
         for (int x = std::max(i - 1, 0); x <= std::min(i + 1, (int)config.width - 1) && !needResample; ++x)
-        {
           for (int y = std::max(j - 1, 0); y <= std::min(j + 1, (int)config.height - 1) && !needResample; ++y)
-          {
             needResample = !close_tex_data(singleRayData[y * config.width + x], texel);
-          }
-        }
+        
         if (needResample)
-        {
-          suspiciosTexelIds.push_back(j * config.width + i);
-        }
+          suspiciosTexelIds.push_back(uint2(i,j));
       }
     }
 
@@ -239,16 +241,18 @@ public:
     // Process suspicious texels
     std::vector<TexType> samples;
     samples.reserve(samplesCount);
-    for (uint32_t texel_idx : suspiciosTexelIds)
+    for (auto texel_idx : suspiciosTexelIds)
     {
       samples.clear();
-      samples.push_back(singleRayData[texel_idx]);
-      const uint32_t texel_x = texel_idx % config.width;
-      const uint32_t texel_y = texel_idx / config.width;
+      samples.push_back(singleRayData[texel_idx.y*config.width+texel_idx.x]);
+      const uint32_t texel_x = texel_idx.x;
+      const uint32_t texel_y = texel_idx.y;
       // Make new samples
       for (uint32_t i = 0; i < config.additionalSamplesCnt; ++i)
       {
-        samples.push_back(sampler.sample((texel_x + hammSamples[2 * i]) / config.width, (texel_y + hammSamples[2 * i + 1]) / config.height));
+        const float offsetX = 0.5f + (hammSamples[2 * i + 0])/(2.0f*config.radius); // back from [-0.5f, 0.5f] to 1.0f
+        const float offsetY = 0.5f + (hammSamples[2 * i + 0])/(2.0f*config.radius); // back from [-0.5f, 0.5f] to 1.0f
+        samples.push_back(sampler.sample((texel_x + offsetX) / config.width, (texel_y + offsetY) / config.height));
       }
 
       // Make labels for samples
@@ -274,9 +278,7 @@ public:
       }
 
       if (referenceSamples.size() == 1)
-      {
         continue;
-      }
 
       std::vector<Line> lines;
       const uint32_t splitLinesCnt = referenceSamples.size() * (referenceSamples.size() - 1) / 2;
@@ -341,42 +343,8 @@ public:
       }
       if (!lines.empty())
       {
-        specialTexels[texel_idx] = construct_bsp(lines, labels, samplesPositions, referenceSamples);
+        specialTexels[texel_idx.y*config.width + texel_idx.x] = construct_bsp(lines, labels, samplesPositions, referenceSamples);
         subtexelsCollection.insert(subtexelsCollection.end(), referenceSamples.begin(), referenceSamples.end());
-      }
-    }
-  }
-
-  TexType sample(float x, float y)
-  {
-    const uint32_t x_texel = x * config.width;
-    const uint32_t y_texel = y * config.height;
-    const uint32_t texel_id = y_texel * config.width + x_texel;
-    if (specialTexels.count(texel_id) == 0)
-      return singleRayData[texel_id];
-    
-    const float x_local = ((x * config.width - x_texel) - 0.5f) * 2.f * config.radius;
-    const float y_local = ((y * config.height - y_texel) - 0.5f) * 2.f * config.radius;
-
-    uint32_t currentNode = specialTexels[texel_id];
-    while (true)
-    {
-      const BSPNode &node = nodesCollection[currentNode];
-      if (node.split[0] * x_local + node.split[1] * y_local + node.split[2] >= 0.f)
-      {
-        if (node.isleftLeaf)
-        {
-          return subtexelsCollection[node.leftIdx];
-        }
-        currentNode = node.leftIdx;
-      }
-      else
-      {
-        if (node.isRightLeaf)
-        {
-          return subtexelsCollection[node.rightIdx];
-        }
-        currentNode = node.rightIdx;
       }
     }
   }
@@ -414,47 +382,18 @@ public:
       }
     }
   }
+  
+  TexType sample(float x, float y) { return access(x,y); }
 
-  void clear(TexType a_val)
-  {
-    for(uint32_t y = 0; y < config.height; y++) 
-    {
-      for(uint32_t x = 0; x < config.width; x++) 
-      {
-
-        const uint32_t texel_id = y*config.width + x;
-        if (specialTexels.count(texel_id) == 0)
-          singleRayData[texel_id] = a_val;
-        else
-        {
-          std::stack<uint32_t> nodesToProcess;
-          uint32_t currentNode = specialTexels[texel_id];
-          
-          do 
-          {
-            BSPNode &node = nodesCollection[currentNode];
-            if (!node.isleftLeaf)
-              nodesToProcess.push(node.leftIdx);
-            else
-              subtexelsCollection[node.leftIdx] = a_val;
-
-            if (!node.isRightLeaf)
-              nodesToProcess.push(node.rightIdx);
-            else
-              subtexelsCollection[node.rightIdx] = a_val;
-            
-            if(nodesToProcess.empty())
-              currentNode = 0xFFFFFFFF;
-            else
-            {
-              currentNode = nodesToProcess.top(); 
-              nodesToProcess.pop();   
-            }
-          } 
-          while(currentNode != 0xFFFFFFFF);
-        }
-
-      }
-    }
-  }
+  //TexType sample(float x, float y) // for debug, draw black pixels on boundaries
+  //{
+  //  const uint32_t x_texel = x * config.width;
+  //  const uint32_t y_texel = y * config.height;
+  //  const uint32_t texel_id = y_texel * config.width + x_texel;
+  //  if (specialTexels.count(texel_id) == 0)
+  //    return singleRayData[texel_id];
+  //  
+  //  return TexType();
+  //}
+  
 };

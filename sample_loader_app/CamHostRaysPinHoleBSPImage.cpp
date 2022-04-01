@@ -65,7 +65,7 @@ public:
   SubPixelElement sample(float x, float y) const
   {
     SubPixelElement sample;
-    sample.objId = tracer->CastSingleRay(x * float(width) + 0.5f, y * float(height) + 0.5f).objId;
+    sample.objId = tracer->CastSingleRay(x * float(width), y * float(height)).objId;
     return sample;
   }
 
@@ -105,7 +105,7 @@ public:
         m_projInv(i,j) = a_projInvMatrix[j*4+i];             // assume column major !
     //memcpy(&m_projInv, a_projInvMatrix, sizeof(float4x4)); // actually same but, not safe if our matrices and Hydra matrices will have different layout
 
-    m_pFrameBuffer = std::make_unique<BSPImage4f>(a_width, a_height, 1.0f);
+    m_pFrameBuffer = std::make_unique<BSPImage4f>(a_width, a_height, 0.5f);
 
     //std::string scenePath = "/home/frol/PROG/msu-graphics-group/scenes/01_simple_scenes/instanced_objects.xml"; //#TODO: pass scene path here!
     std::string scenePath = "/home/frol/PROG/msu-graphics-group/scenes/01_simple_scenes/bunny_cornell.xml";       //#TODO: pass scene path here!

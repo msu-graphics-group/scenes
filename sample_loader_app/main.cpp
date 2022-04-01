@@ -31,40 +31,8 @@ void PlaneHammersley(float *result, int n)
   } 
 }
 
-float saturate(float x)
-{
-  return std::max(std::min(x, 1.0f), 0.0f);
-}
+static inline float saturate(float x) { return std::max(std::min(x, 1.0f), 0.0f); }
 
-void get_indices(const std::vector<float> &hamm, const std::vector<uint32_t> ids, const std::array<float, 3> &line, float x, float y, uint32_t &idx1, uint32_t &idx2)
-{
-  idx2 = ids[0];
-  for (uint32_t i : ids)
-  {
-    if (i != idx2)
-    {
-      idx1 = i;
-      break;
-    }
-  }
-  float s1 = 0;
-  float s2 = 0;
-  for (uint32_t i = 0; i < ids.size(); ++i)
-  {
-    if (ids[i] == idx1)
-    {
-      s1 += ((line[0] * hamm[2 * i] + line[1] * hamm[2 * i + 1] + line[2]) * (x * line[0] + y * line[1] + line[2]) >= 0.0) ? 1 : -1;
-    }
-    else
-    {
-      s2 += ((line[0] * hamm[2 * i] + line[1] * hamm[2 * i + 1] + line[2]) * (x * line[0] + y * line[1] + line[2]) <= 0.0) ? 1 : -1;
-    }
-  }
-  float s = std::abs(s1) > std::abs(s2) ? s1 : s2;
-  if (s < 0.0) {
-    std::swap(idx1, idx2);
-  }
-}
 
 int main(int argc, char **argv)
 {

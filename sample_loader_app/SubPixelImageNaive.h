@@ -85,8 +85,8 @@ class SubPixelImageNaive
       {
         for(uint32_t sx=0; sx < SUBPIXEL_SIZE_X; sx++)
         {
-          const float xNormalized = (fpx + (float(sx) + 0.5f)/float(SUBPIXEL_SIZE_X) - 0.5f)/config.fwidth;
-          const float yNormalized = (fpy + (float(sy) + 0.5f)/float(SUBPIXEL_SIZE_Y) - 0.5f)/config.fheight;
+          const float xNormalized = (fpx + (float(sx) + 0.5f)/float(SUBPIXEL_SIZE_X))/config.fwidth;
+          const float yNormalized = (fpy + (float(sy) + 0.5f)/float(SUBPIXEL_SIZE_Y))/config.fheight;
           subPixel.data[sx][sy]   = sampler.sample(xNormalized, yNormalized);
         }
       }
