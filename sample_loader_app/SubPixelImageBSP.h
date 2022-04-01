@@ -10,8 +10,7 @@
 
 #include "svm.h"
 
-
-std::vector<float> gen_hammersley(uint32_t cnt, float radius);
+void PlaneHammersley(float *result, int n);
 
 template<typename TexType>
 class SubPixelImageBSP
@@ -190,7 +189,10 @@ public:
   SubPixelImageBSP(const Config &conf) : config(conf) 
   {
     singleRayData.resize(config.width * config.height);
-    hammSamples = gen_hammersley(config.additionalSamplesCnt, config.radius);
+    hammSamples.resize(config.additionalSamplesCnt*2);
+    PlaneHammersley(hammSamples.data(), config.additionalSamplesCnt);
+    for (float& v : hammSamples)                                       // [0,1] ==> [-0.5,0.5]
+      v = (v - 0.5f) * 2.0f * config.radius;
   }
 
   SubPixelImageBSP(uint32_t a_width, uint32_t a_height, float a_radius = 0.5f)
@@ -200,7 +202,10 @@ public:
     config.radius         = a_radius;
     config.additionalSamplesCnt = 64;
     singleRayData.resize(config.width * config.height);
-    hammSamples = gen_hammersley(config.additionalSamplesCnt, config.radius);
+    hammSamples.resize(config.additionalSamplesCnt*2);
+    PlaneHammersley(hammSamples.data(), config.additionalSamplesCnt);
+    for (float& v : hammSamples)                                      // [0,1] ==> [-0.5,0.5]
+      v = (v - 0.5f) * 2.0f * config.radius;
   }
 
   struct uint2 {
