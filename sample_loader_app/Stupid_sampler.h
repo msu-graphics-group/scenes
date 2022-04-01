@@ -25,7 +25,7 @@ class StupidImageSampler
     float invHeight;
   } config;
 
-  StupidImageSampler(uint32_t a_width, uint32_t a_height)
+  StupidImageSampler(uint32_t a_width, uint32_t a_height, float a_radius = 0.5f)
   {
     config.width   = a_width;
     config.height  = a_height;

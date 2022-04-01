@@ -193,11 +193,11 @@ public:
     hammSamples = gen_hammersley(config.additionalSamplesCnt, config.radius);
   }
 
-  BSPBasedSampler(uint32_t a_width, uint32_t a_height)
+  BSPBasedSampler(uint32_t a_width, uint32_t a_height, float a_radius = 0.5f)
   {
     config.width          = a_width;
     config.height         = a_height;
-    config.radius         = 0.5f;
+    config.radius         = a_radius;
     config.additionalSamplesCnt = 64;
     singleRayData.resize(config.width * config.height);
     hammSamples = gen_hammersley(config.additionalSamplesCnt, config.radius);
