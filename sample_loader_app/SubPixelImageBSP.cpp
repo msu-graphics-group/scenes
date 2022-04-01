@@ -1,4 +1,4 @@
-#include "BSP_based_sampler.h"
+#include "SubPixelImageBSP.h"
 
 std::vector<float> gen_hammersley(uint32_t cnt, float radius)
 {

@@ -23,8 +23,10 @@ using LiteMath::float2;
 
 #include "svm.h"
 #include "RT_sampler.h"
-#include "BSP_based_sampler.h"
-#include "Stupid_sampler.h"
+
+#include "SubPixelImageBSP.h"
+#include "SubPixelImageNaive.h"
+
 #include <set>
 #include <cassert>
 #include <fstream>

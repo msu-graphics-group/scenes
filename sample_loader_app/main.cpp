@@ -4,8 +4,9 @@
 
 #include "svm.h"
 #include "RT_sampler.h"
-#include "BSP_based_sampler.h"
-#include "Stupid_sampler.h"
+#include "SubPixelImageBSP.h"
+#include "SubPixelImageNaive.h"
+
 #include <set>
 #include <cassert>
 #include <fstream>
@@ -133,7 +134,7 @@ int main(int argc, char **argv)
   config.width  = WIDTH;
   config.height = HEIGHT;
   config.radius = 0.5f;
-  config.additionalSamplesCnt = 32;
+  config.additionalSamplesCnt = 64;
   BSPBasedSampler<SurfaceInfo> sampler(config);
  
   std::cout << "[main]: building bsp image ... " << std::endl;
