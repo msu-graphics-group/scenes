@@ -50,8 +50,8 @@ static inline bool close_tex_data(SubPixelElement a, SubPixelElement b)
   return a.objId == b.objId;
 }
 
-//using BSPImage4f = SubPixelImageBSP<SubPixelElement>;
-using BSPImage4f = SubPixelImageNaive<SubPixelElement>;
+using BSPImage4f = SubPixelImageBSP<SubPixelElement>;
+//using BSPImage4f = SubPixelImageNaive<SubPixelElement>;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -242,6 +242,9 @@ void PinHoleBSPImageAccum::AddSamplesContribution(float* out_color4f, const floa
       //assert(passData.packedIndex == packedIndex);
     }
 
+    if(passData.x == 1.0f || passData.y == 1.0f)
+      continue;
+
     auto& subPixel = m_pFrameBuffer->access(passData.x, passData.y);
     subPixel.color[0] += color[0];
     subPixel.color[1] += color[1];
@@ -281,13 +284,13 @@ void PinHoleBSPImageAccum::FinishRendering()
 
   const float invSPP = 1.0f/m_spp;
   /////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  const int refSubSamples = 16;
+  const int refSubSamples = 64;
   std::vector<float> hammSamples(refSubSamples * 2);
   PlaneHammersley(hammSamples.data(), refSubSamples);
   const float aaSamplesTotalf = float(refSubSamples);
-  const float aaSamplesTotalInv = 1.0f/aaSamplesTotalf;
   /////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
+  
+  #pragma omp parallel for
   for (uint32_t y1 = 0; y1 < m_height; ++y1)
   {
     for (uint32_t x1 = 0; x1 < m_width; ++x1)
@@ -303,16 +306,15 @@ void PinHoleBSPImageAccum::FinishRendering()
         {
           // perform tone mapping for subixel
           //
-          const float hitsAccount = aaSamplesTotalf/float(sample.hits);
-          r += std::min(sample.color[0]*invSPP*hitsAccount, aaSamplesTotalInv);
-          g += std::min(sample.color[1]*invSPP*hitsAccount, aaSamplesTotalInv);
-          b += std::min(sample.color[2]*invSPP*hitsAccount, aaSamplesTotalInv);
+          r += std::min(sample.color[0]/float(sample.hits), 1.0f);
+          g += std::min(sample.color[1]/float(sample.hits), 1.0f);
+          b += std::min(sample.color[2]/float(sample.hits), 1.0f);
         }
       }
       
-      const float r1 = std::pow(r, 1.0f/2.2f);
-      const float g1 = std::pow(g, 1.0f/2.2f);
-      const float b1 = std::pow(b, 1.0f/2.2f);
+      const float r1 = std::pow(r/aaSamplesTotalf, 1.0f/2.2f);
+      const float g1 = std::pow(g/aaSamplesTotalf, 1.0f/2.2f);
+      const float b1 = std::pow(b/aaSamplesTotalf, 1.0f/2.2f);
 
       imageLDR[y1*m_width+x1] = 0xFF000000 | (uint32_t(r1*255.0f) << 0) | (uint32_t(g1*255.0f) << 8) | (uint32_t(b1*255.0f) << 16);
     }
