@@ -130,12 +130,12 @@ int main(int argc, char **argv)
   saveImageLDR("01_output_antialiased.png", image, WIDTH, HEIGHT, 4);
   memset(image.data(), 0, sizeof(uint32_t)*size_t(WIDTH*HEIGHT));
 
-  BSPBasedSampler<SurfaceInfo>::Config config;
+  SubPixelImageBSP<SurfaceInfo>::Config config;
   config.width  = WIDTH;
   config.height = HEIGHT;
   config.radius = 0.5f;
   config.additionalSamplesCnt = 64;
-  BSPBasedSampler<SurfaceInfo> sampler(config);
+  SubPixelImageBSP<SurfaceInfo> sampler(config);
  
   std::cout << "[main]: building bsp image ... " << std::endl;
   sampler.configure(RTSampler(pRayTracerCPU, WIDTH, HEIGHT));
@@ -170,7 +170,7 @@ int main(int argc, char **argv)
 
   // now check the same with our "stupid subpixel image" approach
   //
-  StupidImageSampler<SurfaceInfo> samplerStupid(WIDTH,HEIGHT);
+  SubPixelImageNaive<SurfaceInfo> samplerStupid(WIDTH,HEIGHT);
   std::cout << "[main]: building stupid subpixel image ... " << std::endl;
   samplerStupid.configure(RTSampler(pRayTracerCPU, WIDTH, HEIGHT));
 

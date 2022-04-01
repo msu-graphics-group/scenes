@@ -50,8 +50,8 @@ static inline bool close_tex_data(SubPixelElement a, SubPixelElement b)
   return a.objId == b.objId;
 }
 
-using BSPImage4f = BSPBasedSampler<SubPixelElement>;
-//using BSPImage4f = StupidImageSampler<SubPixelElement>;
+using BSPImage4f = SubPixelImageBSP<SubPixelElement>;
+//using BSPImage4f = SubPixelImageNaive<SubPixelElement>;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 

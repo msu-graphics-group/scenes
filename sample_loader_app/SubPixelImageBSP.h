@@ -14,7 +14,7 @@
 std::vector<float> gen_hammersley(uint32_t cnt, float radius);
 
 template<typename TexType>
-class BSPBasedSampler
+class SubPixelImageBSP
 {
   public:
   struct Config
@@ -187,13 +187,13 @@ class BSPBasedSampler
   }
 
 public:
-  BSPBasedSampler(const Config &conf) : config(conf) 
+  SubPixelImageBSP(const Config &conf) : config(conf) 
   {
     singleRayData.resize(config.width * config.height);
     hammSamples = gen_hammersley(config.additionalSamplesCnt, config.radius);
   }
 
-  BSPBasedSampler(uint32_t a_width, uint32_t a_height, float a_radius = 0.5f)
+  SubPixelImageBSP(uint32_t a_width, uint32_t a_height, float a_radius = 0.5f)
   {
     config.width          = a_width;
     config.height         = a_height;

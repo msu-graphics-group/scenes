@@ -10,7 +10,7 @@
 #include "svm.h"
 
 template<typename TexType>
-class StupidImageSampler
+class SubPixelImageNaive
 {
   public:
   static constexpr uint32_t SUBPIXEL_SIZE_X = 4;
@@ -25,7 +25,7 @@ class StupidImageSampler
     float invHeight;
   } config;
 
-  StupidImageSampler(uint32_t a_width, uint32_t a_height, float a_radius = 0.5f)
+  SubPixelImageNaive(uint32_t a_width, uint32_t a_height, float a_radius = 0.5f)
   {
     config.width   = a_width;
     config.height  = a_height;
