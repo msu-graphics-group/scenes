@@ -42,7 +42,7 @@ SurfaceInfo RayTracer::CastSingleRay(float x, float y)
 
 void RayTracer::kernel_InitEyeRay(float tidX, float tidY, LiteMath::float4* rayPosAndNear, LiteMath::float4* rayDirAndFar)
 {
-  LiteMath::float3 rayDir = EyeRayDirNormalized(tidX/float(m_width), tidY/float(m_height), m_invProjView); 
+  LiteMath::float3 rayDir = EyeRayDirNormalized(tidX/m_fwidth, tidY/m_fheight, m_invProjView); 
   LiteMath::float3 rayPos = float3(0,0,0);
 
   transform_ray3f(m_worldViewInv, &rayPos, &rayDir);

@@ -180,17 +180,15 @@ int main(int argc, char **argv)
     {
       float r = 0, g = 0, b = 0;
       
-      for (uint32_t y = 0; y < aaSamples; ++y)
+      for (int k = 0; k < int(refSubSamples); ++k)
       {
-        for (uint32_t x = 0; x < aaSamples; ++x)
-        {
-          const float x_coord = float(x + i * aaSamples) / (aaSamples * WIDTH);
-          const float y_coord = float(y + j * aaSamples) / (aaSamples * HEIGHT);
-          SurfaceInfo sample = samplerStupid.sample(x_coord, y_coord);
-          r += ((sample.color >> 16) & 0xFF);
-          g += ((sample.color >> 8) & 0xFF);
-          b += (sample.color & 0xFF);
-        }
+        float x = ( float(i) + hammSamples[k * 2 + 0] ) / float(WIDTH);
+        float y = ( float(j) + hammSamples[k * 2 + 1] ) / float(HEIGHT);
+
+        SurfaceInfo sample = samplerStupid.sample(x, y);
+        r += ((sample.color >> 16) & 0xFF);
+        g += ((sample.color >> 8) & 0xFF);
+        b += (sample.color & 0xFF);
       }
 
       r /= aaSamples * aaSamples;

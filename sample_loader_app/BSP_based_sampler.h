@@ -353,9 +353,8 @@ public:
     const uint32_t y_texel = y * config.height;
     const uint32_t texel_id = y_texel * config.width + x_texel;
     if (specialTexels.count(texel_id) == 0)
-    {
       return singleRayData[texel_id];
-    }
+    
     const float x_local = ((x * config.width - x_texel) - 0.5f) * 2.f * config.radius;
     const float y_local = ((y * config.height - y_texel) - 0.5f) * 2.f * config.radius;
 

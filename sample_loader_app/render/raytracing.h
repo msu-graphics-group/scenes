@@ -17,7 +17,7 @@ struct SurfaceInfo
 class RayTracer
 {
 public:
-  RayTracer(uint32_t a_width, uint32_t a_height) : m_width(a_width), m_height(a_height) {}
+  RayTracer(uint32_t a_width, uint32_t a_height) : m_width(a_width), m_height(a_height), m_fwidth(a_width), m_fheight(a_height) {}
   bool LoadScene(const std::string& path);
   SurfaceInfo CastSingleRay(float x, float y);
 
@@ -28,6 +28,8 @@ protected:
 
   uint32_t m_width;
   uint32_t m_height;
+  float    m_fwidth;
+  float    m_fheight;
 
   LiteMath::float4x4 m_invProjView;
   LiteMath::float4x4 m_worldViewInv;

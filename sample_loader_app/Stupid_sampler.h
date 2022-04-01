@@ -77,19 +77,17 @@ class StupidImageSampler
     {
       const uint32_t px = UnpackX(pair.first);
       const uint32_t py = UnpackY(pair.first);
-      //const float   fpx = float(px);
-      //const float   fpy = float(py);
+      const float   fpx = float(px);
+      const float   fpy = float(py);
 
       auto& subPixel = pair.second;
       for(uint32_t sy=0; sy < SUBPIXEL_SIZE_Y; sy++)
       {
-        //const float yNormalized = (fpy + (float(sy) + 0.5f)/float(SUBPIXEL_SIZE_Y))*config.invHeight;
-        const float yNormalized = (float)(sy + py * SUBPIXEL_SIZE_Y) / float(SUBPIXEL_SIZE_Y * config.height);
         for(uint32_t sx=0; sx < SUBPIXEL_SIZE_X; sx++)
         {
-          //const float xNormalized = (fpx + (float(sx)+ 0.5f)/float(SUBPIXEL_SIZE_X))*config.invWidth;
-          const float xNormalized = (float)(sx + px * SUBPIXEL_SIZE_X) / float(SUBPIXEL_SIZE_X * config.width);
-          subPixel.data[sx][sy] = sampler.sample(xNormalized, yNormalized);
+          const float xNormalized = (fpx + (float(sx) + 0.5f)/float(SUBPIXEL_SIZE_X) - 0.5f)/config.fwidth;
+          const float yNormalized = (fpy + (float(sy) + 0.5f)/float(SUBPIXEL_SIZE_Y) - 0.5f)/config.fheight;
+          subPixel.data[sx][sy]   = sampler.sample(xNormalized, yNormalized);
         }
       }
     }
