@@ -26,13 +26,6 @@ class BSPBasedSampler
   } config;
   private:
 
-  struct uint2
-  {
-    uint2() : x(0), y(0) {}
-    uint2(uint32_t a_x, uint32_t a_y) : x(a_x), y(a_y) {}
-    uint32_t x,y;
-  };
-
   std::vector<TexType> singleRayData;
   std::vector<float> hammSamples;
   using Line = std::array<float, 3>;
@@ -85,7 +78,7 @@ class BSPBasedSampler
       }
     }
 
-    // Prepare subnodes data
+    // Prepare subnodes data  
     std::vector<uint32_t> leftLabels;
     std::vector<uint32_t> rightLabels;
     std::vector<float> leftSamples;
@@ -194,6 +187,12 @@ class BSPBasedSampler
   }
 
 public:
+  BSPBasedSampler(const Config &conf) : config(conf) 
+  {
+    singleRayData.resize(config.width * config.height);
+    hammSamples = gen_hammersley(config.additionalSamplesCnt, config.radius);
+  }
+
   BSPBasedSampler(uint32_t a_width, uint32_t a_height)
   {
     config.width          = a_width;
@@ -204,11 +203,6 @@ public:
     hammSamples = gen_hammersley(config.additionalSamplesCnt, config.radius);
   }
 
-  BSPBasedSampler(const Config &conf) : config(conf) 
-  {
-    singleRayData.resize(config.width * config.height);
-    hammSamples = gen_hammersley(config.additionalSamplesCnt, config.radius);
-  }
 
   template<typename BaseSampler>
   void configure(const BaseSampler &sampler)
@@ -221,7 +215,7 @@ public:
     }
 
     // Collect suspicious (aliased, with high divergence in neighbourhood) texels.
-    std::vector<uint2> suspiciosTexelIds;
+    std::vector<uint32_t> suspiciosTexelIds;
     for (int i = 0; i < int(config.width); ++i) {
       for (int j = 0; j < int(config.height); ++j) {
         bool needResample = false;
@@ -229,10 +223,14 @@ public:
         for (int x = std::max(i - 1, 0); x <= std::min(i + 1, (int)config.width - 1) && !needResample; ++x)
         {
           for (int y = std::max(j - 1, 0); y <= std::min(j + 1, (int)config.height - 1) && !needResample; ++y)
+          {
             needResample = !close_tex_data(singleRayData[y * config.width + x], texel);
+          }
         }
         if (needResample)
-          suspiciosTexelIds.push_back(uint2(i,j));
+        {
+          suspiciosTexelIds.push_back(j * config.width + i);
+        }
       }
     }
 
@@ -241,17 +239,16 @@ public:
     // Process suspicious texels
     std::vector<TexType> samples;
     samples.reserve(samplesCount);
-    for (auto texel_idx : suspiciosTexelIds)
+    for (uint32_t texel_idx : suspiciosTexelIds)
     {
       samples.clear();
-      samples.push_back(singleRayData[texel_idx.y*config.width+texel_idx.x]);
-      const uint32_t texel_x = texel_idx.x;
-      const uint32_t texel_y = texel_idx.y;
+      samples.push_back(singleRayData[texel_idx]);
+      const uint32_t texel_x = texel_idx % config.width;
+      const uint32_t texel_y = texel_idx / config.width;
       // Make new samples
       for (uint32_t i = 0; i < config.additionalSamplesCnt; ++i)
       {
-        samples.push_back(sampler.sample((texel_x + 0.5f + hammSamples[2 * i + 0]) / config.width, 
-                                         (texel_y + 0.5f + hammSamples[2 * i + 1]) / config.height));
+        samples.push_back(sampler.sample((texel_x + hammSamples[2 * i]) / config.width, (texel_y + hammSamples[2 * i + 1]) / config.height));
       }
 
       // Make labels for samples
@@ -344,7 +341,7 @@ public:
       }
       if (!lines.empty())
       {
-        specialTexels[texel_idx.y*config.width+texel_idx.x] = construct_bsp(lines, labels, samplesPositions, referenceSamples);
+        specialTexels[texel_idx] = construct_bsp(lines, labels, samplesPositions, referenceSamples);
         subtexelsCollection.insert(subtexelsCollection.end(), referenceSamples.begin(), referenceSamples.end());
       }
     }
@@ -352,15 +349,14 @@ public:
 
   TexType sample(float x, float y)
   {
-    const uint32_t x_texel = x * config.width + 0.5f;
-    const uint32_t y_texel = y * config.height + 0.5f;
+    const uint32_t x_texel = x * config.width;
+    const uint32_t y_texel = y * config.height;
     const uint32_t texel_id = y_texel * config.width + x_texel;
     if (specialTexels.count(texel_id) == 0)
+    {
       return singleRayData[texel_id];
-
-    //return TexType();
-
-    const float x_local = ((x * config.width  - x_texel) - 0.5f) * 2.f * config.radius;
+    }
+    const float x_local = ((x * config.width - x_texel) - 0.5f) * 2.f * config.radius;
     const float y_local = ((y * config.height - y_texel) - 0.5f) * 2.f * config.radius;
 
     uint32_t currentNode = specialTexels[texel_id];
@@ -388,13 +384,13 @@ public:
 
   TexType& access(float x, float y)
   {
-    const uint32_t x_texel = x * config.width + 0.5f;
-    const uint32_t y_texel = y * config.height + 0.5f;
+    const uint32_t x_texel = x * config.width;
+    const uint32_t y_texel = y * config.height;
     const uint32_t texel_id = y_texel * config.width + x_texel;
     if (specialTexels.count(texel_id) == 0)
       return singleRayData[texel_id];
     
-    const float x_local = ((x * config.width  - x_texel) - 0.5f) * 2.f * config.radius;
+    const float x_local = ((x * config.width - x_texel) - 0.5f) * 2.f * config.radius;
     const float y_local = ((y * config.height - y_texel) - 0.5f) * 2.f * config.radius;
 
     uint32_t currentNode = specialTexels[texel_id];
