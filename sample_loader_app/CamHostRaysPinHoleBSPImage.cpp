@@ -282,7 +282,7 @@ void PinHoleBSPImageAccum::FinishRendering()
 
   std::vector<uint32_t> imageLDR(m_width*m_height);
 
-  const float invSPP = 1.0f/m_spp;
+  //const float invSPP = 1.0f/m_spp;
   /////////////////////////////////////////////////////////////////////////////////////////////////////////////
   const int refSubSamples = 64;
   std::vector<float> hammSamples(refSubSamples * 2);
@@ -322,6 +322,15 @@ void PinHoleBSPImageAccum::FinishRendering()
 
   std::string out1 = outImageFolder + "/z_out1_bsp.png";
   saveImageLDR(out1.c_str(), imageLDR, m_width, m_height, 4);
+
+  
+  std::cout << "dumping sublixels ..." << std::endl;
+  std::string out2 = outImageFolder + "/debug_pixels/";
+  m_pFrameBuffer->dumpSamples(out2.c_str());
+  for (uint32_t y1 = 0; y1 < m_height; ++y1)
+    for (uint32_t x1 = 0; x1 < m_width; ++x1)
+      m_pFrameBuffer->dumpPixel(out2.c_str(), x1, y1);
+  std::cout << "dumping sublixels finished!" << std::endl;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

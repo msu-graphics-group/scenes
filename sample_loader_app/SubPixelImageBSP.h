@@ -7,6 +7,8 @@
 
 #include <cstdint>
 #include <stack>
+#include <iomanip> // for printing integer with leading zerows
+#include <fstream>
 
 #include "svm.h"
 
@@ -32,7 +34,7 @@ class SubPixelImageBSP
   // Left means that dot(point, split) >= 0 for the point in left child
   struct BSPNode
   {
-    uint32_t isleftLeaf:1;
+    uint32_t isLeftLeaf:1;
     uint32_t leftIdx:31;
     uint32_t isRightLeaf:1;
     uint32_t rightIdx:31;
@@ -163,12 +165,12 @@ class SubPixelImageBSP
     root.split = line;
     if (leftIsLeaf || leftLines.empty())
     {
-      root.isleftLeaf = 1;
+      root.isLeftLeaf = 1;
       root.leftIdx = leftLabels[0] + subtexelsCollection.size();
     }
     else
     {
-      root.isleftLeaf = 0;
+      root.isLeftLeaf = 0;
       root.leftIdx = construct_bsp(leftLines, leftLabels, leftSamples, texData);
     }
 
@@ -371,7 +373,7 @@ public:
       const BSPNode &node = nodesCollection[currentNode];
       if (node.split[0] * x_local + node.split[1] * y_local + node.split[2] >= 0.f)
       {
-        if (node.isleftLeaf)
+        if (node.isLeftLeaf)
         {
           return subtexelsCollection[node.leftIdx];
         }
@@ -400,5 +402,79 @@ public:
   //  
   //  return TexType();
   //}
+
+  void dumpSamples(const char* a_path)
+  {
+    std::stringstream ss;
+    ss << a_path << "a_samples.bin";
+    int add_samples = int(hammSamples.size()/2);
+    std::ofstream out(ss.str(), std::ios::binary | std::ios::out);
+    out.write((char*)&add_samples, sizeof(add_samples));
+    out.write((char*)hammSamples.data(), sizeof(float) * hammSamples.size());
+    out.close();
+  }
+
+  void dumpPixel(const char* a_path, uint32_t x_texel, uint32_t y_texel)
+  {
+    const uint32_t texel_id = y_texel * config.width + x_texel;
+    if (specialTexels.count(texel_id) == 0)
+      return;
+    
+    std::stack<uint32_t> nodesToProcess;
+    std::vector<BSPNode> nodesToPrint; 
+    uint32_t currentNode = specialTexels[texel_id];
+
+    while(true)
+    {
+      const BSPNode &node = nodesCollection[currentNode];
+      nodesToPrint.push_back(node);
+      
+      if (!node.isLeftLeaf && !node.isRightLeaf)
+      {
+        currentNode = node.leftIdx;
+        nodesToProcess.push(node.rightIdx);
+      }
+      else if(!node.isLeftLeaf)
+        currentNode = node.leftIdx;
+      else if(!node.isRightLeaf)
+        currentNode = node.rightIdx;
+      else
+      {
+        if(nodesToProcess.empty())
+          break;
+        else
+        {
+          currentNode = nodesToProcess.top();
+          nodesToProcess.pop();
+        }
+      }  
+    }  
+     
+    std::string fileName = std::string(a_path) + "pix_";
+    std::stringstream fNameStream;
+    fNameStream << a_path << "pix_" << std::setfill('0') << std::setw(4) << x_texel << "_" << std::setfill('0') << std::setw(4) << y_texel << ".bin";
+    
+    std::ofstream fout(fNameStream.str(), std::ios::out | std::ios::binary);
+    int add_samples = int(nodesToPrint.size());
+    fout.write((char*)&add_samples, sizeof(add_samples));
+    for(auto node : nodesToPrint)
+      fout.write((char*)&node.split[0], sizeof(float)*3);
+    fout.close();
+  }
+
+
+  // std::vector<float> hammSamples(add_samples * 2);
+  // std::vector<int> labels(ids.size());
+  // auto weights = svm.get_weights();
+  // const float a = weights[0];
+  // const float b = weights[1];
+  // const float c = weights[2];
+
+  //std::ofstream out(ss.str(), std::ios::binary | std::ios::out);
+  //out.write((char*)&add_samples, sizeof(add_samples));
+  //out.write((char*)hammSamples.data(), sizeof(float) * hammSamples.size());
+  //out.write((char*)labels.data(), sizeof(labels[0]) * labels.size());
+  //out.write((char*)weights.data(), sizeof(float) * weights.size());
+  //out.close();
   
 };
