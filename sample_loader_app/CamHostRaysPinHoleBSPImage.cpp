@@ -50,8 +50,8 @@ static inline bool close_tex_data(SubPixelElement a, SubPixelElement b)
   return a.objId == b.objId;
 }
 
-using BSPImage4f = SubPixelImageBSP<SubPixelElement>;
-//using BSPImage4f = SubPixelImageNaive<SubPixelElement>;
+//using BSPImage4f = SubPixelImageBSP<SubPixelElement>;
+using BSPImage4f = SubPixelImageNaive<SubPixelElement>;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -125,6 +125,8 @@ public:
   void AddSamplesContribution(float* out_color4f, const float* colors4f, size_t in_blockSize, uint32_t a_width, uint32_t a_height, int passId) override;
   void FinishRendering() override;
   
+  void SaveUpsampledRegion(int regionStartX, int regionStartY, int regionSize, int upSamplePower); 
+
   std::unique_ptr<BSPImage4f> m_pFrameBuffer = nullptr;
   std::vector<PipeThrough>    m_pipeline[HOST_RAYS_PIPELINE_LENGTH];
   //float4*                     m_hydraFB = nullptr;
@@ -324,14 +326,64 @@ void PinHoleBSPImageAccum::FinishRendering()
   saveImageLDR(out1.c_str(), imageLDR, m_width, m_height, 4);
 
   
-  std::cout << "dumping sublixels ..." << std::endl;
-  std::string out2 = outImageFolder + "/debug_pixels/";
-  m_pFrameBuffer->dumpSamples(out2.c_str());
-  for (uint32_t y1 = 0; y1 < m_height; ++y1)
-    for (uint32_t x1 = 0; x1 < m_width; ++x1)
-      m_pFrameBuffer->dumpPixel(out2.c_str(), x1, y1);
-  std::cout << "dumping sublixels finished!" << std::endl;
+  //std::cout << "dumping sublixels ..." << std::endl;
+  //std::string out2 = outImageFolder + "/debug_pixels/";
+  //m_pFrameBuffer->dumpSamples(out2.c_str());
+  //for (uint32_t y1 = 0; y1 < m_height; ++y1)
+  //  for (uint32_t x1 = 0; x1 < m_width; ++x1)
+  //    m_pFrameBuffer->dumpPixel(out2.c_str(), x1, y1);
+  //std::cout << "dumping sublixels finished!" << std::endl;
+
+  SaveUpsampledRegion(413,143,50,32);
 }
+
+void PinHoleBSPImageAccum::SaveUpsampledRegion(int regionStartX, int regionStartY, int regionSize, int upSamplePower)
+{
+  std::cout << "compute upsampled image ..." << std::endl;
+
+  int totalSizeX = regionSize*upSamplePower;
+  int totalSizeY = regionSize*upSamplePower;
+
+  std::vector<uint32_t> imageLDR(totalSizeX*totalSizeY);
+  
+  #pragma omp parallel for
+  for (int y1 = regionStartY; y1 < regionStartY + regionSize; ++y1) {
+    for (int x1 = regionStartX; x1 < regionStartX + regionSize; ++x1) {
+
+      for (int y2 = 0; y2 < upSamplePower; ++y2) {
+        for (int x2 = 0; x2 < upSamplePower; ++x2) {
+              
+          float coordX = (float(x1) + float(x2)/float(upSamplePower) )/m_fwidth;
+          float coordY = (float(y1) + float(y2)/float(upSamplePower) )/m_fheight;
+         
+          int coordXAbs = (x1 - regionStartX)*upSamplePower + x2;
+          int coordYAbs = (y1 - regionStartY)*upSamplePower + y2;
+
+          SubPixelElement sample = m_pFrameBuffer->sample(coordX, coordY);  
+          float fHitsCount = float( std::max(sample.hits, 1u) );
+
+          float r = std::min(sample.color[0]/fHitsCount, 1.0f);
+          float g = std::min(sample.color[1]/fHitsCount, 1.0f);
+          float b = std::min(sample.color[2]/fHitsCount, 1.0f);
+
+          const float r1 = std::pow(r, 1.0f/2.2f);
+          const float g1 = std::pow(g, 1.0f/2.2f);
+          const float b1 = std::pow(b, 1.0f/2.2f);
+
+          imageLDR[coordYAbs*totalSizeX + coordXAbs] = 0xFF000000 | (uint32_t(r1*255.0f) << 0) | (uint32_t(g1*255.0f) << 8) | (uint32_t(b1*255.0f) << 16);
+        }
+      }
+
+    }
+  }
+  
+
+  std::string out1 = outImageFolder + "/z_upsampled.png";
+  saveImageLDR(out1.c_str(), imageLDR, totalSizeX, totalSizeY, 4);
+
+}
+
+
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
