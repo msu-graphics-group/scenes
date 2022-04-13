@@ -266,7 +266,10 @@ public:
       {
         const float offsetX = 0.5f + (hammSamples[2 * i + 0])/(2.0f*config.radius); // back from [-0.5f, 0.5f] to 1.0f
         const float offsetY = 0.5f + (hammSamples[2 * i + 1])/(2.0f*config.radius); // back from [-0.5f, 0.5f] to 1.0f
-        samples.push_back(sampler.sample((texel_x + offsetX) / config.width, (texel_y + offsetY) / config.height));
+        //const float offsetX = 0.5f + (hammSamples[2 * i + 0]); // back from [-0.5f, 0.5f] to 1.0f
+        //const float offsetY = 0.5f + (hammSamples[2 * i + 1]); // back from [-0.5f, 0.5f] to 1.0f
+        samples.push_back(sampler.sample((texel_x + offsetX) / float(config.width), 
+                                         (texel_y + offsetY) / float(config.height)));
       }
 
       // Make labels for samples

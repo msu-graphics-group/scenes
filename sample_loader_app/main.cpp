@@ -136,6 +136,14 @@ int main(int argc, char **argv)
   saveImageLDR("02_output_antialiased_bsp.png", image, WIDTH, HEIGHT, 4);
   memset(image.data(), 0, sizeof(uint32_t)*size_t(WIDTH*HEIGHT));
 
+  std::cout << "dumping sublixels ..." << std::endl;
+  std::string out2 = "./debug_pixels/";
+  sampler.dumpSamples(out2.c_str());
+  for (uint32_t y1 = 0; y1 < HEIGHT; ++y1)
+    for (uint32_t x1 = 0; x1 < WIDTH; ++x1)
+      sampler.dumpPixel(out2.c_str(), x1, y1);
+  std::cout << "dumping sublixels finished!" << std::endl;
+
   // now check the same with our "stupid subpixel image" approach
   //
   SubPixelImageNaive<SurfaceInfo> samplerStupid(WIDTH,HEIGHT);
