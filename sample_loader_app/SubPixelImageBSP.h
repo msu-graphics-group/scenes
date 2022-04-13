@@ -14,6 +14,8 @@
 
 void PlaneHammersley(float *result, int n);
 
+#define STORE_LABELS
+
 template<typename TexType>
 class SubPixelImageBSP
 {
@@ -43,6 +45,11 @@ class SubPixelImageBSP
   std::vector<BSPNode> nodesCollection;
   std::vector<TexType> subtexelsCollection;
   std::unordered_map<uint32_t, uint32_t> specialTexels;
+
+  #ifdef STORE_LABELS
+  std::unordered_map<uint32_t,  std::vector<uint32_t> > specialLabels;
+  #endif
+
 
   uint32_t construct_bsp(std::vector<Line> lines, const std::vector<uint32_t> &labels, const std::vector<float> &samples, const std::vector<TexType> &texData)
   {
@@ -258,7 +265,7 @@ public:
       for (uint32_t i = 0; i < config.additionalSamplesCnt; ++i)
       {
         const float offsetX = 0.5f + (hammSamples[2 * i + 0])/(2.0f*config.radius); // back from [-0.5f, 0.5f] to 1.0f
-        const float offsetY = 0.5f + (hammSamples[2 * i + 0])/(2.0f*config.radius); // back from [-0.5f, 0.5f] to 1.0f
+        const float offsetY = 0.5f + (hammSamples[2 * i + 1])/(2.0f*config.radius); // back from [-0.5f, 0.5f] to 1.0f
         samples.push_back(sampler.sample((texel_x + offsetX) / config.width, (texel_y + offsetY) / config.height));
       }
 
@@ -310,6 +317,15 @@ public:
             }
           }
         }
+
+        #ifdef STORE_LABELS
+        specialLabels[texel_idx.y*config.width + texel_idx.x] = labels;
+        #endif
+
+        //if(texel_idx.x == 419 && texel_idx.y == 155)
+        //{
+        //  int i=0;
+        //}
 
         // Train SVM
         SVM svm;
@@ -459,9 +475,14 @@ public:
     fout.write((char*)&add_samples, sizeof(add_samples));
     for(auto node : nodesToPrint)
       fout.write((char*)&node.split[0], sizeof(float)*3);
+    
+    #ifdef STORE_LABELS
+    const auto& labels = specialLabels[texel_id];
+    for(uint32_t label : labels)
+      fout.write((char*)&label, sizeof(uint32_t));
+    #endif
     fout.close();
   }
-
 
   // std::vector<float> hammSamples(add_samples * 2);
   // std::vector<int> labels(ids.size());
