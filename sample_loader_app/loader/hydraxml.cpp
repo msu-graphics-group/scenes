@@ -112,16 +112,16 @@ namespace hydra_xml
 
     m_cameraLib    = m_xmlDoc.child(L"cam_lib");
     m_settingsNode = m_xmlDoc.child(L"render_lib");
-    m_sceneNode    = m_xmlDoc.child(L"scenes");
+    m_scenesNode   = m_xmlDoc.child(L"scenes");
 
-    if (m_texturesLib == nullptr || m_materialsLib == nullptr || m_lightsLib == nullptr || m_cameraLib == nullptr || m_geometryLib == nullptr || m_settingsNode == nullptr || m_sceneNode == nullptr)
+    if (m_texturesLib == nullptr || m_materialsLib == nullptr || m_lightsLib == nullptr || m_cameraLib == nullptr || m_geometryLib == nullptr || m_settingsNode == nullptr || m_scenesNode == nullptr)
     {
       std::string errMsg = "Loaded state (" +  path + ") doesn't have one of (textures_lib, materials_lib, lights_lib, cam_lib, geometry_lib, render_lib, scenes";
       LogError(errMsg);
       return -1;
     }
 
-    parseInstancedMeshes(m_sceneNode, m_geometryLib);
+    parseInstancedMeshes(m_scenesNode, m_geometryLib);
 
     return 0;
   }
@@ -186,7 +186,7 @@ namespace hydra_xml
     std::wstringstream inputStream(matrix_str);
     
     float data[16];
-    for(int i = 0; i < 16; i++)
+    for(int i=0;i<16;i++)
       inputStream >> data[i];
     
     result.set_row(0, LiteMath::float4(data[0],data[1], data[2], data[3]));
@@ -233,13 +233,13 @@ namespace hydra_xml
 
   std::vector<LightInstance> HydraScene::InstancesLights(uint32_t a_sceneId) 
   {
-    auto sceneNode = m_sceneNode.child(L"scene");
+    auto sceneNode = m_scenesNode.child(L"scene");
     if(a_sceneId != 0)
     {
       std::wstringstream temp;
       temp << a_sceneId;
       std::wstring tempStr = temp.str();
-      sceneNode = m_sceneNode.find_child_by_attribute(L"id", tempStr.c_str());
+      sceneNode = m_scenesNode.find_child_by_attribute(L"id", tempStr.c_str());
     }
 
     std::vector<pugi::xml_node> lights; 
@@ -260,46 +260,11 @@ namespace hydra_xml
       inst.instId    = instNode.attribute(L"id").as_uint();
       inst.lightId   = instNode.attribute(L"light_id").as_uint(); 
       inst.lightNode = lights[inst.lightId];
+      inst.node      = instNode;
+      inst.matrix    = float4x4FromString(instNode.attribute(L"matrix").as_string());
+      result.push_back(inst);
     }
     return result;
-  }
-
-  std::ostream& operator<<(std::ostream& os, gltfMaterialData gltfMat)
-  {
-    os << "\tBase color: " << gltfMat.metRoughnessData.baseColor[0] << " "
-                           << gltfMat.metRoughnessData.baseColor[1] << " "
-                           << gltfMat.metRoughnessData.baseColor[2] << " "
-                           << gltfMat.metRoughnessData.baseColor[3] << "\n";
-    os << "\tBase color texId: " << gltfMat.metRoughnessData.baseColorTexId << "\n";
-
-    os << "\tMetallic factor: " << gltfMat.metRoughnessData.metallic << "\n";
-    os << "\tRoughness factor: " << gltfMat.metRoughnessData.roughness << "\n";
-    os << "\tMetallicRoughness texId: " << gltfMat.metRoughnessData.metallicRoughnessTexId << "\n";
-
-    os << "\tEmission color: " << gltfMat.emissionColor[0] << " "
-       << gltfMat.emissionColor[1] << " "
-       << gltfMat.emissionColor[2] << "\n";
-    os << "\tEmission texId: " << gltfMat.emissionTexId << "\n";
-
-    os << "\tNormal texId: " << gltfMat.normalTexId << "\n";
-    os << "\tOcclusion texId: " << gltfMat.occlusionTexId << "\n";
-
-    os << "\tAlpha cutoff: " << gltfMat.alphaCutoff << "\n";
-    os << "\tAlpha mode: ";
-    switch(gltfMat.alphaMode)
-    {
-    case 0:
-      os << "OPAQUE";
-      break;
-    case 1:
-      os << "MASK";
-      break;
-    case 3:
-      os << "BLEND";
-      break;
-    }
-
-    return os;
   }
 
 }
