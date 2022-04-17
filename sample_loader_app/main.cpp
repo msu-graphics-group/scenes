@@ -91,7 +91,7 @@ int main(int argc, char **argv)
       gt_green = saturate(gt_green/refSubSamples) * 255.0f;
       gt_blue  = saturate(gt_blue/refSubSamples)  * 255.0f;
 
-      image[j*WIDTH+i] = 0xFF000000u | (uint32_t(gt_blue) << 16) | (uint32_t(gt_green) << 8) | uint32_t(gt_red);
+      image[j*WIDTH+i] = 0xFF000000u | (uint32_t(gt_blue) << 16) | (uint32_t(gt_green) << 8) | (uint32_t)(gt_red);
     }
   }
 
