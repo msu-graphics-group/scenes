@@ -423,9 +423,11 @@ public:
   {
     std::stringstream ss;
     ss << a_path << "a_samples.bin";
-    int add_samples = int(hammSamples.size()/2);
+    int add_samples = int(hammSamples.size()/2) + 1;
     std::ofstream out(ss.str(), std::ios::binary | std::ios::out);
     out.write((char*)&add_samples, sizeof(add_samples));
+    float center[2] = {0.f, 0.f};
+    out.write((char*)center, sizeof(center));
     out.write((char*)hammSamples.data(), sizeof(float) * hammSamples.size());
     out.close();
   }
