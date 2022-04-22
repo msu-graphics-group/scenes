@@ -199,8 +199,8 @@ void PinHoleBSPImageAccum::MakeRaysBlock(RayPart1* out_rayPosAndNear, RayPart2* 
     p1.origin[0]   = ray_pos.x;
     p1.origin[1]   = ray_pos.y;
     p1.origin[2]   = ray_pos.z;
-    p1.xyPosPacked = myPackXY1616(std::max<int>(int(m_fwidth*rndX  - 0.5f), 0), 
-                                  std::max<int>(int(m_fheight*rndY - 0.5f), 0));
+    p1.xyPosPacked = myPackXY1616(std::max<int>(int(m_fwidth*rndX), 0), 
+                                  std::max<int>(int(m_fheight*rndY), 0));
    
     RayPart2 p2;
     p2.direction[0] = ray_dir.x;
@@ -257,14 +257,13 @@ void PinHoleBSPImageAccum::AddSamplesContribution(float* out_color4f, const floa
     //int x = (packedIndex & 0x0000FFFF);           ///<! extract x position from color.w
     //int y = (packedIndex & 0xFFFF0000) >> 16;     ///<! extract y position from color.w
     
-    int x = int(m_fwidth*passData.x  - 0.0f);
-    int y = int(m_fheight*passData.y - 0.0f);
+    int x = int(m_fwidth*passData.x);
+    int y = int(m_fheight*passData.y);
 
-    x = std::max<int>(0, std::min<int>(x, m_width -1));
-    y = std::max<int>(0, std::min<int>(y, m_height-1));
+    x = std::min<int>(x, m_width -1);
+    y = std::min<int>(y, m_height-1);
 
-    const int offset = (a_height-y-1)*a_width + x;
-    //const int offset = y*a_width + x;
+    const int offset = y*a_width + x;
 
     if (x >= 0 && y >= 0 && x < int(a_width) && y < int(a_height))
     {
@@ -334,7 +333,8 @@ void PinHoleBSPImageAccum::FinishRendering()
       m_pFrameBuffer->dumpPixel(out2.c_str(), x1, y1);
   std::cout << "dumping sublixels finished!" << std::endl;
 
-  SaveUpsampledRegion(413,143,50,32);
+  SaveUpsampledRegion(413,m_height-143-51,50,32);
+  SaveUpsampledRegion(413,143,           50,32);
 }
 
 void PinHoleBSPImageAccum::SaveUpsampledRegion(int regionStartX, int regionStartY, int regionSize, int upSamplePower)
@@ -377,13 +377,11 @@ void PinHoleBSPImageAccum::SaveUpsampledRegion(int regionStartX, int regionStart
     }
   }
   
-
-  std::string out1 = outImageFolder + "/z_upsampled.png";
+  std::stringstream strOut;
+  strOut << outImageFolder.c_str() << "/" << "z_upsampled_" << std::setfill('0') << std::setw(4) << regionStartX << "_" << std::setfill('0') << std::setw(4) << regionStartY << ".png";
+  std::string out1 = strOut.str(); //outImageFolder + "/z_upsampled.png";
   saveImageLDR(out1.c_str(), imageLDR, totalSizeX, totalSizeY, 4);
-
 }
-
-
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

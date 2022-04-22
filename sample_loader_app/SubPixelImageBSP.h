@@ -470,7 +470,7 @@ public:
      
     std::string fileName = std::string(a_path) + "pix_";
     std::stringstream fNameStream;
-    fNameStream << a_path << "pix_" << std::setfill('0') << std::setw(4) << x_texel << "_" << std::setfill('0') << std::setw(4) << y_texel << ".bin";
+    fNameStream << a_path << "pix_" << std::setfill('0') << std::setw(4) << x_texel << "_" << std::setfill('0') << std::setw(4) << config.height-y_texel-1 << ".bin";
     
     std::ofstream fout(fNameStream.str(), std::ios::out | std::ios::binary);
     int add_samples = int(nodesToPrint.size());
