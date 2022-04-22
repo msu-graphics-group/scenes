@@ -292,7 +292,7 @@ void PinHoleBSPImageAccum::FinishRendering()
   const float aaSamplesTotalf = float(refSubSamples);
   /////////////////////////////////////////////////////////////////////////////////////////////////////////////
   
-  #pragma omp parallel for
+  //#pragma omp parallel for
   for (uint32_t y1 = 0; y1 < m_height; ++y1)
   {
     for (uint32_t x1 = 0; x1 < m_width; ++x1)

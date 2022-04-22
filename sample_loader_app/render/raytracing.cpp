@@ -114,8 +114,7 @@ LiteMath::float3 EyeRayDirNormalized(float x, float y, LiteMath::float4x4 a_mVie
 
   pos = a_mViewProjInv * pos;
   pos /= pos.w;
-  pos.y *= (-1.0f);
-
+  //pos.y *= (-1.0f);
   return normalize(to_float3(pos));
 }
 
