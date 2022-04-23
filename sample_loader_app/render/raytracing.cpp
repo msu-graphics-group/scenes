@@ -60,7 +60,7 @@ void RayTracer::kernel_RayTrace(uint32_t tidX, uint32_t tidY, const LiteMath::fl
   CRT_Hit hit = m_pAccelStruct->RayQuery_NearestHit(rayPos, rayDir);
 
   out_sample[tidY * m_width + tidX].color = m_palette[hit.instId % palette_size];
-  out_sample[tidY * m_width + tidX].objId = (hit.instId << 16) | hit.geomId;
+  out_sample[tidY * m_width + tidX].objId = hit.instId; // (hit.instId << 16) | hit.geomId;
 }
 
 

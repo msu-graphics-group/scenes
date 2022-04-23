@@ -236,22 +236,25 @@ void PinHoleBSPImageAccum::AddSamplesContribution(float* out_color4f, const floa
     const uint32_t packedIndex = myAsInt(color.w);
 
     const PipeThrough& passData = m_pipeline[takeID][i];
-    if(passData.packedIndex != packedIndex)
-    {
-      std::cout << "warning, bad packed index: " << i << " : " << passData.packedIndex << " != " << packedIndex << std::endl; 
-      std::cout.flush();
-      continue;
-      //assert(passData.packedIndex == packedIndex);
-    }
+    //if(passData.packedIndex != packedIndex)
+    //{
+    //  std::cout << "warning, bad packed index: " << i << " : " << passData.packedIndex << " != " << packedIndex << std::endl; 
+    //  std::cout.flush();
+    //  continue;
+    //  //assert(passData.packedIndex == packedIndex);
+    //}
 
     if(passData.x == 1.0f || passData.y == 1.0f)
       continue;
 
-    auto& subPixel = m_pFrameBuffer->access(passData.x, passData.y);
-    subPixel.color[0] += color[0];
-    subPixel.color[1] += color[1];
-    subPixel.color[2] += color[2];
-    subPixel.hits++;
+    auto& subPixel = m_pFrameBuffer->access(passData.x, passData.y); // process sample only if we hit same surface
+    if(subPixel.objId == packedIndex) 
+    {
+      subPixel.color[0] += color[0];
+      subPixel.color[1] += color[1];
+      subPixel.color[2] += color[2];
+      subPixel.hits++;
+    }
 
     //assert(passData.packedIndex == packedIndex);  ///<! check that we actually took data from 'm_pipeline' for right ray
     //int x = (packedIndex & 0x0000FFFF);           ///<! extract x position from color.w
