@@ -348,7 +348,7 @@ public:
       {
         uint32_t leftCnt = 0;
         uint32_t rightCnt = 0;
-        for (uint32_t j = 0; j < samples.size(); j += 2)
+        for (uint32_t j = 0; j < samplesPositions.size(); j += 2)
         {
           if (lines[i][0] * samplesPositions[j] + lines[i][1] * samplesPositions[j + 1] + lines[i][2] > 0.0f)
           {
