@@ -20,6 +20,7 @@ using LiteMath::float3;
 using LiteMath::float2;
 
 #include "HydraRngUtils.h"
+#include "pugixml.hpp" // for XML
 
 #include "svm.h"
 #include "RT_sampler.h"
@@ -105,6 +106,12 @@ public:
         m_projInv(i,j) = a_projInvMatrix[j*4+i];             // assume column major !
     //memcpy(&m_projInv, a_projInvMatrix, sizeof(float4x4)); // actually same but, not safe if our matrices and Hydra matrices will have different layout
 
+    m_doc.load_string(a_camNodeText);
+    pugi::xml_node a_camNode      = m_doc.child(L"camera"); //
+    pugi::xml_node a_settingsNode = m_doc.child(L"render_settings"); //
+    //ReadParamsFromNode(a_camNode);
+    ReadParamsFromSettingsNode(a_settingsNode);
+
     m_pFrameBuffer = std::make_unique<BSPImage4f>(a_width, a_height, 0.5f);
 
     //std::string scenePath = "/home/frol/PROG/msu-graphics-group/scenes/01_simple_scenes/instanced_objects.xml"; //#TODO: pass scene path here!
@@ -120,6 +127,8 @@ public:
     std::cout << "[PinHoleBSP]: constructing BSPImage ... " << std::endl;
     m_pFrameBuffer->configure(ZeroColorRTSampler(pRayTracerCPU, a_width, a_height));
   }
+
+  void ReadParamsFromSettingsNode(pugi::xml_node a_node);
 
   void MakeRaysBlock(RayPart1* out_rayPosAndNear, RayPart2* out_rayDirAndFar, size_t in_blockSize, int passId) override;
   void AddSamplesContribution(float* out_color4f, const float* colors4f, size_t in_blockSize, uint32_t a_width, uint32_t a_height, int passId) override;
@@ -145,6 +154,10 @@ public:
   float FOCAL_PLANE_DIST = 10.0f;
   float DOF_LENS_RADIUS  = 0.0f;
   bool  DOF_IS_ENABLED = false;
+  pugi::xml_document m_doc;
+
+  int32_t* m_pInstRemapTable = nullptr;
+  int32_t  m_pInstRemapSize = 0;
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -152,6 +165,14 @@ public:
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+void PinHoleBSPImageAccum::ReadParamsFromSettingsNode(pugi::xml_node a_node)
+{
+  const uint64_t address = a_node.child(L"remapInstAddress").text().as_ullong();
+  const uint64_t size    = a_node.child(L"remapInstSize").text().as_ullong();
+
+  m_pInstRemapTable = reinterpret_cast<int32_t*>(address);
+  m_pInstRemapSize  = int32_t(size);
+}
 
 static inline int myPackXY1616(int x, int y) { return (y << 16) | (x & 0x0000FFFF); }
 static inline int myAsInt(float x) 
@@ -233,17 +254,11 @@ void PinHoleBSPImageAccum::AddSamplesContribution(float* out_color4f, const floa
   for (int i = 0; i < int(in_blockSize); i++)
   {
     const auto color = colors[i];
-    const uint32_t packedIndex = myAsInt(color.w);
+    uint32_t packedIndex = myAsInt(color.w);
+    if(packedIndex < m_pInstRemapSize)
+      packedIndex = m_pInstRemapTable[packedIndex];
 
     const PipeThrough& passData = m_pipeline[takeID][i];
-    //if(passData.packedIndex != packedIndex)
-    //{
-    //  std::cout << "warning, bad packed index: " << i << " : " << passData.packedIndex << " != " << packedIndex << std::endl; 
-    //  std::cout.flush();
-    //  continue;
-    //  //assert(passData.packedIndex == packedIndex);
-    //}
-
     if(passData.x == 1.0f || passData.y == 1.0f)
       continue;
 

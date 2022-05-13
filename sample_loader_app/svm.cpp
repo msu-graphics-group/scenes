@@ -69,7 +69,7 @@ void SVM::fit(
     {
       const uint32_t x_offset = i * (pointDim + 1);
       const float margin = Y_train[i] * dot(weights.data(), X_train.data() + x_offset, pointDim + 1);
-      if (margin >= 1.f * 0.1f) // классифицируем верно
+      if (margin >= 1.f * 0.0f) // классифицируем верно
       {
         for (uint32_t j = 0; j < weights.size(); ++j)
           weights[j] = weights[j] - etha * alpha * weights[j] / epochs;
