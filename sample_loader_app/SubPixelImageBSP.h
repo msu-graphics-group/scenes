@@ -298,7 +298,7 @@ public:
   }
   
   template<typename BaseSampler>
-  std::vector<Line> GetLinesFromTriangles(const std::vector<TexType>& referenceSamples, const BaseSampler &sampler)
+  std::vector<Line> GetLinesFromTriangles(const std::vector<TexType>& referenceSamples, const BaseSampler &sampler, uint32_t px, uint32_t py)
   {
     // (1) get vertices in NDC
     //
@@ -306,7 +306,21 @@ public:
 
     // (2) transform vertices from NDC to pixel-scale coordinates
     //
+    const float absPX = (float(px) + 0.5f)/float(config.width);  
+    const float absPY = (float(py) + 0.5f)/float(config.height); 
+    
+    const float absPX2 = absPX*2.0f - 1.0f; // [0,1] ==> [-1,1]
+    const float absPY2 = absPY*2.0f - 1.0f; // [0,1] ==> [-1,1]
 
+    const float pixelSSX = float(config.width);  // NDC scale => pixel scale   
+    const float pixelSSY = float(config.height); // NDC scale => pixel scale
+
+    for(auto& v : tverts) 
+    {
+      v.x = pixelSSX*(v.x - absPX2);
+      v.y = pixelSSY*(v.y - absPY2);
+    }
+    
     // (3) calc line equation
     //
     std::vector<Line> lines(tverts.size());
@@ -426,7 +440,7 @@ public:
       #endif
 
       std::vector<Line> lines  = GetLinesSVM(referenceSamples, labels);
-      //std::vector<Line> lines2 = GetLinesFromTriangles(referenceSamples, sampler);
+      //std::vector<Line> lines2 = GetLinesFromTriangles(referenceSamples, sampler, texel_x, texel_y);
       
       std::vector<float> samplesPositions = RemoveBadLines(lines);
       if (!lines.empty())
