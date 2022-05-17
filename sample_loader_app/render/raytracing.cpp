@@ -91,15 +91,16 @@ void RayTracer::kernel_RayTrace(uint32_t tidX, uint32_t tidY, const LiteMath::fl
 //}
 
 
-std::vector<LiteMath::float2> RayTracer::GetAllTriangleVerts2D(const SurfaceInfo* a_samples, size_t a_samplesNum,
-                                                               const SurfaceInfo* a_compressed, size_t a_compressedNum)
+std::vector<LiteMath::float2> RayTracer::GetAllTriangleVerts2D(const SurfaceInfo* a_compressed, size_t a_compressedNum)
 {
-  //const auto compressed = RemoveDuplicateLabels(a_samples, a_samplesNum);
-
-  std::vector<LiteMath::float2> res(a_compressedNum*3);
+  std::vector<LiteMath::float2> res; 
+  res.reserve(a_compressedNum*3);
+  
   for(size_t sampleId = 0; sampleId < a_compressedNum; sampleId++)
   {
     const SurfaceInfo hit = a_compressed[sampleId];
+    if(hit.geomId == uint32_t(-1))
+      continue;
 
     // (1) read vertices of target mesh and triangle
     //
@@ -122,14 +123,9 @@ std::vector<LiteMath::float2> RayTracer::GetAllTriangleVerts2D(const SurfaceInfo
 
     // (3) write their coordinates to resulting vector 
     //
-    res[sampleId*3+0].x = A_transformed.x;
-    res[sampleId*3+0].y = A_transformed.y;
-
-    res[sampleId*3+1].x = B_transformed.x;
-    res[sampleId*3+1].y = B_transformed.y;
-
-    res[sampleId*3+2].x = C_transformed.x;
-    res[sampleId*3+2].y = C_transformed.y;
+    res.push_back(LiteMath::float2(A_transformed.x, A_transformed.y));
+    res.push_back(LiteMath::float2(B_transformed.x, B_transformed.y));
+    res.push_back(LiteMath::float2(C_transformed.x, C_transformed.y));
   }
 
   return res;

@@ -26,8 +26,7 @@ public:
   bool LoadScene(const std::string& path);
   SurfaceInfo CastSingleRay(float x, float y);
 
-  std::vector<LiteMath::float2> GetAllTriangleVerts2D(const SurfaceInfo* a_samples, size_t a_samplesNum,
-                                                      const SurfaceInfo* a_compressed, size_t a_compressedNum);
+  std::vector<LiteMath::float2> GetAllTriangleVerts2D(const SurfaceInfo* a_compressed, size_t a_compressedNum);
 
 protected:
 

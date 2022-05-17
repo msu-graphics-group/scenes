@@ -11,4 +11,6 @@ public:
 
   SurfaceInfo sample(float x, float y)      const { return tracer->CastSingleRay(x * float(width), y * float(height)); }
   SurfaceInfo fetch(uint32_t x, uint32_t y) const { return tracer->CastSingleRay(float(x)+0.5f, float(y)+0.5f); }
+
+  std::vector<LiteMath::float2> GetAllTriangleVerts2D(const SurfaceInfo* a_compressed, size_t a_compressedNum) const { return tracer->GetAllTriangleVerts2D(a_compressed, a_compressedNum); }
 };

@@ -296,6 +296,43 @@ public:
     } // end of 'for (uint32_t lineId = 0, cluster1Id = 0, cluster2Id = referenceSamples.size() - 1; lineId < splitLinesCnt; ++lineId)'
     return lines;
   }
+  
+  template<typename BaseSampler>
+  std::vector<Line> GetLinesFromTriangles(const std::vector<TexType>& referenceSamples, const BaseSampler &sampler)
+  {
+    // (1) get vertices in NDC
+    //
+    auto tverts = sampler.GetAllTriangleVerts2D(referenceSamples.data(), referenceSamples.size());
+
+    // (2) transform vertices from NDC to pixel-scale coordinates
+    //
+
+    // (3) calc line equation
+    //
+    std::vector<Line> lines(tverts.size());
+    for(size_t i=0;i<lines.size();i+=3)
+    { 
+      auto v0 = tverts[i+0];
+      auto v1 = tverts[i+1];
+      auto v2 = tverts[i+2];
+
+      // v0-->v1
+      lines[i+0][0] = v0.y - v1.y; // A = (y1 - y2);
+      lines[i+0][1] = v1.x - v0.x; // B = (x2 - x1);
+      lines[i+0][2] = -lines[i+0][0]*v0.x - lines[i+0][1]*v0.y; // C = -A*x1 - B*y1;
+      
+      // v1-->v2
+      lines[i+1][0] = v1.y - v2.y; // A = (y1 - y2);
+      lines[i+1][1] = v2.x - v1.x; // B = (x2 - x1);
+      lines[i+1][2] = -lines[i+1][0]*v1.x - lines[i+1][1]*v1.y;  // C = -A*x1 - B*y1;
+      
+      // v2-->v0
+      lines[i+2][0] = v2.y - v0.y; // A = (y1 - y2);
+      lines[i+2][1] = v0.x - v2.x; // B = (x2 - x1);
+      lines[i+2][2] = -lines[i+2][0]*v2.x - lines[i+2][1]*v2.y; // C = -A*x1 - B*y1;
+    }
+    return lines; 
+  }
 
   std::vector<float> RemoveBadLines(std::vector<Line>& lines)
   {
@@ -388,7 +425,8 @@ public:
       specialLabels[texel_idx.y*config.width + texel_idx.x] = labels;
       #endif
 
-      std::vector<Line> lines = GetLinesSVM(referenceSamples, labels);
+      std::vector<Line> lines  = GetLinesSVM(referenceSamples, labels);
+      //std::vector<Line> lines2 = GetLinesFromTriangles(referenceSamples, sampler);
       
       std::vector<float> samplesPositions = RemoveBadLines(lines);
       if (!lines.empty())
