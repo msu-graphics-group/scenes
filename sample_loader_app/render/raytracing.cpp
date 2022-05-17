@@ -115,10 +115,9 @@ std::vector<LiteMath::float2> RayTracer::GetAllTriangleVerts2D(const SurfaceInfo
 
     // (2) apply worldView and projection matrices to them
     //
-
-    float4 A_transformed = m_WVP*A_pos; A_transformed /= A_transformed.w;
-    float4 B_transformed = m_WVP*B_pos; B_transformed /= B_transformed.w;
-    float4 C_transformed = m_WVP*C_pos; C_transformed /= C_transformed.w;
+    float4 A_transformed = m_WVP*(m_instMatrices[hit.instId]*A_pos); A_transformed /= A_transformed.w;
+    float4 B_transformed = m_WVP*(m_instMatrices[hit.instId]*B_pos); B_transformed /= B_transformed.w;
+    float4 C_transformed = m_WVP*(m_instMatrices[hit.instId]*C_pos); C_transformed /= C_transformed.w;
 
     // (3) write their coordinates to resulting vector 
     //
@@ -178,11 +177,15 @@ bool RayTracer::LoadScene(const std::string& path)
     m_triIndices.insert(m_triIndices.end(), currMesh.indices.begin(), currMesh.indices.end());
     m_vPos4f.insert(m_vPos4f.end(), currMesh.vPos4f.begin(), currMesh.vPos4f.end()); 
   }
-
+  
+  m_instMatrices.reserve(1024);
+  m_instMatrices.clear();
+  
   m_pAccelStruct->ClearScene();
   for(auto inst : scene.InstancesGeom())
   {
     m_pAccelStruct->AddInstance(inst.geomId, inst.matrix);
+    m_instMatrices.push_back(inst.matrix);
   }
   m_pAccelStruct->CommitScene();
 

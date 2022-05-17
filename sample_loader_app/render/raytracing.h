@@ -48,7 +48,8 @@ protected:
   std::vector<uint32_t> m_matIdByPrimId;  ///< matId  = m_matIdByPrimId[offset + primId]
   std::vector<uint32_t> m_triIndices;     ///< (A,B,C) = m_triIndices[(offset + primId)*3 + 0/1/2]
   std::vector<uint32_t> m_vertOffset;     ///< vertOffs = m_vertOffset[geomId]
-  std::vector<LiteMath::float4> m_vPos4f; ///< vertPos  = m_vPos4f[vertOffs + vertId]
+  std::vector<LiteMath::float4>   m_vPos4f; ///< vertPos  = m_vPos4f[vertOffs + vertId]
+  std::vector<LiteMath::float4x4> m_instMatrices;
 
   // color palette to select color for objects based on mesh/instance id
   static constexpr uint32_t palette_size = 20;
