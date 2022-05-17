@@ -12,5 +12,3 @@ public:
   SurfaceInfo sample(float x, float y)      const { return tracer->CastSingleRay(x * float(width), y * float(height)); }
   SurfaceInfo fetch(uint32_t x, uint32_t y) const { return tracer->CastSingleRay(float(x)+0.5f, float(y)+0.5f); }
 };
-
-

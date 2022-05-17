@@ -58,9 +58,81 @@ void RayTracer::kernel_RayTrace(uint32_t tidX, uint32_t tidY, const LiteMath::fl
   const LiteMath::float4 rayDir = *rayDirAndFar ;
 
   CRT_Hit hit = m_pAccelStruct->RayQuery_NearestHit(rayPos, rayDir);
+  
+  SurfaceInfo res;
+  res.instId = hit.instId; 
+  res.geomId = hit.geomId;
+  res.primId = hit.primId;
+  res.color  = m_palette[hit.instId % palette_size];
+  out_sample[tidY * m_width + tidX] = res;
+}
 
-  out_sample[tidY * m_width + tidX].color = m_palette[hit.instId % palette_size];
-  out_sample[tidY * m_width + tidX].objId = hit.instId; // (hit.instId << 16) | hit.geomId;
+std::vector<SurfaceInfo> RemoveDuplicateLabels(const SurfaceInfo* a_samples, size_t a_samplesNum)
+{
+  std::vector<SurfaceInfo> triIds;
+  triIds.reserve(a_samplesNum);
+  
+  for(size_t samId=0; samId < a_samplesNum; samId++) 
+  {
+    bool found = false;
+    for(size_t j=0; j<triIds.size(); j++) 
+    {
+      if(triIds[j] == a_samples[samId])
+      {
+        found = true;
+        break;
+      }
+    }  
+    if(!found)
+      triIds.push_back(a_samples[samId]);
+  }
+
+  return triIds;
+}
+
+
+std::vector<LiteMath::float2> RayTracer::GetAllTriangleVerts2D(const SurfaceInfo* a_samples, size_t a_samplesNum)
+{
+  const auto compressed = RemoveDuplicateLabels(a_samples, a_samplesNum);
+
+  std::vector<LiteMath::float2> res(compressed.size()*3);
+  for(size_t sampleId = 0; sampleId < compressed.size(); sampleId++)
+  {
+    SurfaceInfo hit = compressed[sampleId];
+
+    // (1) read vertices of target mesh and triangle
+    //
+    const uint32_t triOffset  = m_matIdOffsets[hit.geomId];
+    const uint32_t vertOffset = m_vertOffset  [hit.geomId];
+  
+    const uint32_t A   = m_triIndices[(triOffset + hit.primId)*3 + 0];
+    const uint32_t B   = m_triIndices[(triOffset + hit.primId)*3 + 1];
+    const uint32_t C   = m_triIndices[(triOffset + hit.primId)*3 + 2];
+
+    const float4 A_pos = m_vPos4f[A + vertOffset];
+    const float4 B_pos = m_vPos4f[B + vertOffset];
+    const float4 C_pos = m_vPos4f[C + vertOffset];
+
+    // (2) apply worldView and projection matrices to them
+    //
+
+    float4 A_transformed = m_WVP*A_pos; A_transformed /= A_transformed.w;
+    float4 B_transformed = m_WVP*B_pos; B_transformed /= B_transformed.w;
+    float4 C_transformed = m_WVP*C_pos; C_transformed /= C_transformed.w;
+
+    // (3) write their coordinates to resulting vector 
+    //
+    res[sampleId*3+0].x = A_transformed.x;
+    res[sampleId*3+0].y = A_transformed.y;
+
+    res[sampleId*3+1].x = B_transformed.x;
+    res[sampleId*3+1].y = B_transformed.y;
+
+    res[sampleId*3+2].x = C_transformed.x;
+    res[sampleId*3+2].y = C_transformed.y;
+  }
+
+  return res;
 }
 
 
@@ -80,10 +152,15 @@ bool RayTracer::LoadScene(const std::string& path)
     auto worldView = lookAt(float3(cam.pos), float3(cam.lookAt), float3(cam.up));
     m_invProjView  = LiteMath::inverse4x4(proj); // LiteMath::inverse4x4(proj * transpose(inverse4x4(worldView)));
     m_worldViewInv = inverse4x4(worldView);
-
+    m_WVP          = proj*worldView;
     break; // take first cam
   }
   
+  m_matIdOffsets.reserve(1024);
+  m_vertOffset.reserve(1024);
+  m_matIdByPrimId.reserve(128000);
+  m_triIndices.reserve(128000*3);
+  m_vPos4f.reserve(128000);
 
   m_pAccelStruct->ClearGeom();
   for(auto meshPath : scene.MeshFiles())
@@ -93,6 +170,13 @@ bool RayTracer::LoadScene(const std::string& path)
     auto geomId   = m_pAccelStruct->AddGeom_Triangles4f(currMesh.vPos4f.data(), currMesh.vPos4f.size(),
                                                         currMesh.indices.data(), currMesh.indices.size());
     (void)geomId; // silence "unused variable" compiler warnings
+
+    m_matIdOffsets.push_back(m_matIdByPrimId.size());
+    m_vertOffset.push_back(m_vPos4f.size());
+
+    m_matIdByPrimId.insert(m_matIdByPrimId.end(), currMesh.matIndices.begin(), currMesh.matIndices.end() );
+    m_triIndices.insert(m_triIndices.end(), currMesh.indices.begin(), currMesh.indices.end());
+    m_vPos4f.insert(m_vPos4f.end(), currMesh.vPos4f.begin(), currMesh.vPos4f.end()); 
   }
 
   m_pAccelStruct->ClearScene();

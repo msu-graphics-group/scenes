@@ -10,11 +10,13 @@
 
 struct SurfaceInfo
 {
-  uint32_t objId;
+  uint32_t instId; 
+  uint32_t geomId;
+  uint32_t primId;
   uint32_t color;
 
-  inline bool operator==(const SurfaceInfo& rhs) const { return objId == rhs.objId; }
-  inline bool operator!=(const SurfaceInfo& rhs) const { return objId != rhs.objId; }
+  inline bool operator==(const SurfaceInfo& rhs) const { return instId == rhs.instId; }
+  inline bool operator!=(const SurfaceInfo& rhs) const { return instId != rhs.instId; }
 };
 
 class RayTracer
@@ -23,6 +25,8 @@ public:
   RayTracer(uint32_t a_width, uint32_t a_height) : m_width(a_width), m_height(a_height), m_fwidth(a_width), m_fheight(a_height) {}
   bool LoadScene(const std::string& path);
   SurfaceInfo CastSingleRay(float x, float y);
+
+  std::vector<LiteMath::float2> GetAllTriangleVerts2D(const SurfaceInfo* a_samples, size_t a_samplesNum);
 
 protected:
 
@@ -36,8 +40,15 @@ protected:
 
   LiteMath::float4x4 m_invProjView;
   LiteMath::float4x4 m_worldViewInv;
+  LiteMath::float4x4 m_WVP;
 
   std::shared_ptr<ISceneObject> m_pAccelStruct;
+
+  std::vector<uint32_t> m_matIdOffsets;   ///< offset = m_matIdOffsets[geomId]
+  std::vector<uint32_t> m_matIdByPrimId;  ///< matId  = m_matIdByPrimId[offset + primId]
+  std::vector<uint32_t> m_triIndices;     ///< (A,B,C) = m_triIndices[(offset + primId)*3 + 0/1/2]
+  std::vector<uint32_t> m_vertOffset;     ///< vertOffs = m_vertOffset[geomId]
+  std::vector<LiteMath::float4> m_vPos4f; ///< vertPos  = m_vPos4f[vertOffs + vertId]
 
   // color palette to select color for objects based on mesh/instance id
   static constexpr uint32_t palette_size = 20;
