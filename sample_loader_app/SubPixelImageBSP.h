@@ -297,6 +297,54 @@ public:
     return lines;
   }
 
+  std::vector<float> RemoveBadLines(std::vector<Line>& lines)
+  {
+    std::vector<float> samplesPositions(2, 0);
+    samplesPositions.insert(samplesPositions.end(), hammSamples.begin(), hammSamples.end());
+    // Remove lines which don't split anything
+    for (int i = lines.size() - 1; i >= 0; --i)
+    {
+      uint32_t leftCnt = 0;
+      uint32_t rightCnt = 0;
+      for (uint32_t j = 0; j < samplesPositions.size(); j += 2)
+      {
+        if (lines[i][0] * samplesPositions[j] + lines[i][1] * samplesPositions[j + 1] + lines[i][2] > 0.0f)
+        {
+          leftCnt++;
+        }
+        else
+        {
+          rightCnt++;
+        }
+      }
+      if (leftCnt == 0 || rightCnt == 0)
+      {
+        lines.erase(lines.begin() + i);
+      }
+    }
+    return samplesPositions;
+  }
+
+  std::vector<uint2> GetSuspiciosTexels(const std::vector<TexType>& a_singleRayData)
+  {
+    std::vector<uint2> suspiciosTexelIds;
+    for (int i = 0; i < int(config.width); ++i) {
+      for (int j = 0; j < int(config.height); ++j) {
+        
+        bool needResample   = false;
+        const TexType texel = a_singleRayData[i * config.width + j];
+        
+        for (int x = std::max(i - 1, 0); x <= std::min(i + 1, (int)config.width - 1) && !needResample; ++x)
+          for (int y = std::max(j - 1, 0); y <= std::min(j + 1, (int)config.height - 1) && !needResample; ++y)
+            needResample = (a_singleRayData[y * config.width + x] != texel);
+        
+        if (needResample)
+          suspiciosTexelIds.push_back(uint2(i,j));
+      }
+    }
+    return suspiciosTexelIds;
+  }
+  
   template<typename BaseSampler>
   void configure(const BaseSampler &sampler)
   {
@@ -308,22 +356,8 @@ public:
     }
 
     // Collect suspicious (aliased, with high divergence in neighbourhood) texels.
-    std::vector<uint2> suspiciosTexelIds;
-    for (int i = 0; i < int(config.width); ++i) {
-      for (int j = 0; j < int(config.height); ++j) {
-        
-        bool needResample   = false;
-        const TexType texel = singleRayData[i * config.width + j];
-        
-        for (int x = std::max(i - 1, 0); x <= std::min(i + 1, (int)config.width - 1) && !needResample; ++x)
-          for (int y = std::max(j - 1, 0); y <= std::min(j + 1, (int)config.height - 1) && !needResample; ++y)
-            needResample = (singleRayData[y * config.width + x] != texel);
-        
-        if (needResample)
-          suspiciosTexelIds.push_back(uint2(i,j));
-      }
-    }
-
+    std::vector<uint2> suspiciosTexelIds = GetSuspiciosTexels(singleRayData);
+   
     const uint32_t samplesCount = config.additionalSamplesCnt + 1;
 
     // Process suspicious texels
@@ -355,31 +389,8 @@ public:
       #endif
 
       std::vector<Line> lines = GetLinesSVM(referenceSamples, labels);
-  
-      std::vector<float> samplesPositions(2, 0);
-      samplesPositions.insert(samplesPositions.end(), hammSamples.begin(), hammSamples.end());
-      // Remove lines which don't split anything
-      for (int i = lines.size() - 1; i >= 0; --i)
-      {
-        uint32_t leftCnt = 0;
-        uint32_t rightCnt = 0;
-        for (uint32_t j = 0; j < samplesPositions.size(); j += 2)
-        {
-          if (lines[i][0] * samplesPositions[j] + lines[i][1] * samplesPositions[j + 1] + lines[i][2] > 0.0f)
-          {
-            leftCnt++;
-          }
-          else
-          {
-            rightCnt++;
-          }
-        }
-        if (leftCnt == 0 || rightCnt == 0)
-        {
-          lines.erase(lines.begin() + i);
-        }
-      }
-
+      
+      std::vector<float> samplesPositions = RemoveBadLines(lines);
       if (!lines.empty())
       {
         specialTexels[texel_idx.y*config.width + texel_idx.x] = construct_bsp(lines, labels, samplesPositions, referenceSamples);
