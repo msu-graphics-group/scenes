@@ -12,6 +12,9 @@ struct SurfaceInfo
 {
   uint32_t objId;
   uint32_t color;
+
+  inline bool operator==(const SurfaceInfo& rhs) const { return objId == rhs.objId; }
+  inline bool operator!=(const SurfaceInfo& rhs) const { return objId != rhs.objId; }
 };
 
 class RayTracer

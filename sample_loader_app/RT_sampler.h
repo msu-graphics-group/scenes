@@ -13,8 +13,4 @@ public:
   SurfaceInfo fetch(uint32_t x, uint32_t y) const { return tracer->CastSingleRay(float(x)+0.5f, float(y)+0.5f); }
 };
 
-inline bool close_tex_data(SurfaceInfo a, SurfaceInfo b)
-{
-  return a.objId == b.objId;
-}
 

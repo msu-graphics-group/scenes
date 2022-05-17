@@ -64,7 +64,7 @@ class SubPixelImageNaive
         const TexType texel = singleRayData[y1 * config.width + x1];
         for (int x = std::max(x1 - 1, 0); x <= std::min(x1 + 1, (int)config.width - 1) && !needResample; ++x)
           for (int y = std::max(y1 - 1, 0); y <= std::min(y1 + 1, (int)config.height - 1) && !needResample; ++y)
-            needResample = !close_tex_data(singleRayData[y * config.width + x], texel);
+            needResample = (singleRayData[y * config.width + x] != texel);
 
         if (needResample)
           m_subPixels[PackXY(x1,y1)] = SubPixel();

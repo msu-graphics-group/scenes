@@ -44,12 +44,11 @@ struct SubPixelElement // can process as float4 in some cases
   float    color[3] = {};
   uint32_t objId    = uint32_t(0xFFFFFFFF);
   uint32_t hits     = 0;
+
+  inline bool operator==(const SubPixelElement& rhs) const { return objId == rhs.objId; }
+  inline bool operator!=(const SubPixelElement& rhs) const { return objId != rhs.objId; }
 };
 
-static inline bool close_tex_data(SubPixelElement a, SubPixelElement b)
-{
-  return a.objId == b.objId;
-}
 
 using BSPImage4f = SubPixelImageBSP<SubPixelElement>;
 //using BSPImage4f = SubPixelImageNaive<SubPixelElement>;
@@ -107,7 +106,7 @@ public:
     //memcpy(&m_projInv, a_projInvMatrix, sizeof(float4x4)); // actually same but, not safe if our matrices and Hydra matrices will have different layout
 
     m_doc.load_string(a_camNodeText);
-    pugi::xml_node a_camNode      = m_doc.child(L"camera"); //
+    //pugi::xml_node a_camNode      = m_doc.child(L"camera"); //
     pugi::xml_node a_settingsNode = m_doc.child(L"render_settings"); //
     //ReadParamsFromNode(a_camNode);
     ReadParamsFromSettingsNode(a_settingsNode);
@@ -254,7 +253,7 @@ void PinHoleBSPImageAccum::AddSamplesContribution(float* out_color4f, const floa
   for (int i = 0; i < int(in_blockSize); i++)
   {
     const auto color = colors[i];
-    uint32_t packedIndex = myAsInt(color.w);
+    auto packedIndex = myAsInt(color.w);
     if(packedIndex < m_pInstRemapSize)
       packedIndex = m_pInstRemapTable[packedIndex];
 
@@ -263,7 +262,7 @@ void PinHoleBSPImageAccum::AddSamplesContribution(float* out_color4f, const floa
       continue;
 
     auto& subPixel = m_pFrameBuffer->access(passData.x, passData.y); // process sample only if we hit same surface
-    if(subPixel.objId == packedIndex) 
+    if(int(subPixel.objId) == packedIndex) 
     {
       subPixel.color[0] += color[0];
       subPixel.color[1] += color[1];

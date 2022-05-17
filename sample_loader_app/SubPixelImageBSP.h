@@ -244,7 +244,7 @@ public:
         
         for (int x = std::max(i - 1, 0); x <= std::min(i + 1, (int)config.width - 1) && !needResample; ++x)
           for (int y = std::max(j - 1, 0); y <= std::min(j + 1, (int)config.height - 1) && !needResample; ++y)
-            needResample = !close_tex_data(singleRayData[y * config.width + x], texel);
+            needResample = (singleRayData[y * config.width + x] != texel);
         
         if (needResample)
           suspiciosTexelIds.push_back(uint2(i,j));
@@ -277,7 +277,7 @@ public:
         bool refFound = false;
         for (uint32_t j = 0, je = referenceSamples.size(); j < je; ++j)
         {
-          if (close_tex_data(referenceSamples[j], samples[i]))
+          if (referenceSamples[j] == samples[i])
           {
             labels.push_back(j);
             refFound = true;

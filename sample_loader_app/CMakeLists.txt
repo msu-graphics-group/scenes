@@ -40,14 +40,14 @@ set(RENDER_SRC
         ${CMAKE_SOURCE_DIR}/render/EmbreeRT.cpp
         ${CMAKE_SOURCE_DIR}/render/image_save.cpp
         ${CMAKE_SOURCE_DIR}/render/raytracing.cpp
-        ${CMAKE_SOURCE_DIR}/CamHostRaysPinHoleBSPImage.cpp
         ${CMAKE_SOURCE_DIR}/main.cpp)
 
 set(HYDRA_SRC HydraRngUtils.cpp)
-set(HYDRA_SRC2 ${HYDRA_API_FOLDER}/hydra_api/pugixml.cpp)
+set(HYDRA_SRC2 ${HYDRA_API_FOLDER}/hydra_api/pugixml.cpp 
+               ${CMAKE_SOURCE_DIR}/CamHostRaysPinHoleBSPImage.cpp)
 
-add_library(hydra_bsp_image SHARED svm.cpp ${SCENE_LOADER_SRC} ${RENDER_SRC} ${HYDRA_SRC} ${HYDRA_SRC2})	
-#add_executable(hydra_bsp_image main.cpp svm.cpp ${SCENE_LOADER_SRC} ${RENDER_SRC} ${HYDRA_SRC})
+#add_library(hydra_bsp_image SHARED svm.cpp ${SCENE_LOADER_SRC} ${RENDER_SRC} ${HYDRA_SRC} ${HYDRA_SRC2})	
+add_executable(hydra_bsp_image main.cpp svm.cpp ${SCENE_LOADER_SRC} ${RENDER_SRC} ${HYDRA_SRC})
 
 set_property(TARGET hydra_bsp_image PROPERTY CXX_STANDARD 17)
 
