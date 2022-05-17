@@ -67,38 +67,39 @@ void RayTracer::kernel_RayTrace(uint32_t tidX, uint32_t tidY, const LiteMath::fl
   out_sample[tidY * m_width + tidX] = res;
 }
 
-std::vector<SurfaceInfo> RemoveDuplicateLabels(const SurfaceInfo* a_samples, size_t a_samplesNum)
+//std::vector<SurfaceInfo> RemoveDuplicateLabels(const SurfaceInfo* a_samples, size_t a_samplesNum)
+//{
+//  std::vector<SurfaceInfo> triIds;
+//  triIds.reserve(a_samplesNum);
+//  
+//  for(size_t samId=0; samId < a_samplesNum; samId++) 
+//  {
+//    bool found = false;
+//    for(size_t j=0; j<triIds.size(); j++) 
+//    {
+//      if(triIds[j] == a_samples[samId])
+//      {
+//        found = true;
+//        break;
+//      }
+//    }  
+//    if(!found)
+//      triIds.push_back(a_samples[samId]);
+//  }
+//
+//  return triIds;
+//}
+
+
+std::vector<LiteMath::float2> RayTracer::GetAllTriangleVerts2D(const SurfaceInfo* a_samples, size_t a_samplesNum,
+                                                               const SurfaceInfo* a_compressed, size_t a_compressedNum)
 {
-  std::vector<SurfaceInfo> triIds;
-  triIds.reserve(a_samplesNum);
-  
-  for(size_t samId=0; samId < a_samplesNum; samId++) 
+  //const auto compressed = RemoveDuplicateLabels(a_samples, a_samplesNum);
+
+  std::vector<LiteMath::float2> res(a_compressedNum*3);
+  for(size_t sampleId = 0; sampleId < a_compressedNum; sampleId++)
   {
-    bool found = false;
-    for(size_t j=0; j<triIds.size(); j++) 
-    {
-      if(triIds[j] == a_samples[samId])
-      {
-        found = true;
-        break;
-      }
-    }  
-    if(!found)
-      triIds.push_back(a_samples[samId]);
-  }
-
-  return triIds;
-}
-
-
-std::vector<LiteMath::float2> RayTracer::GetAllTriangleVerts2D(const SurfaceInfo* a_samples, size_t a_samplesNum)
-{
-  const auto compressed = RemoveDuplicateLabels(a_samples, a_samplesNum);
-
-  std::vector<LiteMath::float2> res(compressed.size()*3);
-  for(size_t sampleId = 0; sampleId < compressed.size(); sampleId++)
-  {
-    SurfaceInfo hit = compressed[sampleId];
+    const SurfaceInfo hit = a_compressed[sampleId];
 
     // (1) read vertices of target mesh and triangle
     //

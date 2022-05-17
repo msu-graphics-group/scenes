@@ -224,6 +224,79 @@ public:
     uint32_t x, y;
   };
 
+  std::vector<TexType> RemoveDuplicatesAndMakeSVMLabels(const std::vector<TexType>& samples, std::vector<uint32_t>& labels)
+  {
+    std::vector<TexType> referenceSamples; 
+    referenceSamples.reserve(samples.size());
+    
+    labels.reserve(samples.size());
+    labels.clear();
+
+    for (uint32_t i = 0; i < samples.size(); ++i)
+    {
+      bool refFound = false;
+      for (uint32_t j = 0, je = referenceSamples.size(); j < je; ++j)
+      {
+        if (referenceSamples[j] == samples[i])
+        {
+          labels.push_back(j);
+          refFound = true;
+          break;
+        }
+      }
+
+      if (!refFound)
+      {
+        labels.push_back(referenceSamples.size());
+        referenceSamples.push_back(samples[i]);
+      }
+    }
+
+    return referenceSamples;
+  }
+
+  std::vector<Line> GetLinesSVM(const std::vector<TexType>& referenceSamples, const std::vector<uint32_t>& labels)
+  {
+    std::vector<Line> lines; 
+    const uint32_t splitLinesCnt = referenceSamples.size() * (referenceSamples.size() - 1) / 2;
+    for (uint32_t lineId = 0, cluster1Id = 0, cluster2Id = referenceSamples.size() - 1; lineId < splitLinesCnt; ++lineId)
+    {
+      // Prepare data to train SVM
+      std::vector<float> localSamples;
+      std::vector<int> localLabels;
+      for (uint32_t i = 0; i < labels.size(); ++i)
+      {
+        if (labels[i] == cluster1Id || labels[i] == cluster2Id)
+        {
+          localLabels.push_back(labels[i] == cluster1Id ? 1 : -1);
+          if (i == 0)
+          {
+            localSamples.resize(2, 0.f);
+          }
+          else
+          {
+            localSamples.push_back(hammSamples[i * 2 - 2]);
+            localSamples.push_back(hammSamples[i * 2 - 1]);
+          }
+        }
+      }
+
+      // Train SVM
+      SVM svm;
+      svm.fit(localSamples, localLabels, localSamples, localLabels);
+      lines.push_back(svm.get_weights());
+      // Update cluster ids
+      cluster1Id++;
+      if (cluster1Id == cluster2Id)
+      {
+        cluster1Id = 0;
+        cluster2Id--;
+      }
+
+    } // end of 'for (uint32_t lineId = 0, cluster1Id = 0, cluster2Id = referenceSamples.size() - 1; lineId < splitLinesCnt; ++lineId)'
+    return lines;
+  }
+
   template<typename BaseSampler>
   void configure(const BaseSampler &sampler)
   {
@@ -270,77 +343,19 @@ public:
       }
 
       // Make labels for samples
-      std::vector<TexType> referenceSamples;
-      std::vector<uint32_t> labels;
-      for (uint32_t i = 0; i < samplesCount; ++i)
-      {
-        bool refFound = false;
-        for (uint32_t j = 0, je = referenceSamples.size(); j < je; ++j)
-        {
-          if (referenceSamples[j] == samples[i])
-          {
-            labels.push_back(j);
-            refFound = true;
-            break;
-          }
-        }
-        if (!refFound)
-        {
-          labels.push_back(referenceSamples.size());
-          referenceSamples.push_back(samples[i]);
-        }
-      }
+      //
+      std::vector<uint32_t> labels; 
+      std::vector<TexType> referenceSamples = RemoveDuplicatesAndMakeSVMLabels(samples, labels);
 
       if (referenceSamples.size() == 1)
         continue;
 
-      std::vector<Line> lines;
-      const uint32_t splitLinesCnt = referenceSamples.size() * (referenceSamples.size() - 1) / 2;
-      for (uint32_t lineId = 0, cluster1Id = 0, cluster2Id = referenceSamples.size() - 1; lineId < splitLinesCnt; ++lineId)
-      {
-        // Prepare data to train SVM
-        std::vector<float> localSamples;
-        std::vector<int> localLabels;
-        for (uint32_t i = 0; i < labels.size(); ++i)
-        {
-          if (labels[i] == cluster1Id || labels[i] == cluster2Id)
-          {
-            localLabels.push_back(labels[i] == cluster1Id ? 1 : -1);
-            if (i == 0)
-            {
-              localSamples.resize(2, 0.f);
-            }
-            else
-            {
-              localSamples.push_back(hammSamples[i * 2 - 2]);
-              localSamples.push_back(hammSamples[i * 2 - 1]);
-            }
-          }
-        }
+      #ifdef STORE_LABELS
+      specialLabels[texel_idx.y*config.width + texel_idx.x] = labels;
+      #endif
 
-        #ifdef STORE_LABELS
-        specialLabels[texel_idx.y*config.width + texel_idx.x] = labels;
-        #endif
-
-        //if(texel_idx.x == 419 && texel_idx.y == 155)
-        //{
-        //  int i=0;
-        //}
-
-        // Train SVM
-        SVM svm;
-        svm.fit(localSamples, localLabels, localSamples, localLabels);
-        lines.push_back(svm.get_weights());
-
-        // Update cluster ids
-        cluster1Id++;
-        if (cluster1Id == cluster2Id)
-        {
-          cluster1Id = 0;
-          cluster2Id--;
-        }
-      }
-
+      std::vector<Line> lines = GetLinesSVM(referenceSamples, labels);
+  
       std::vector<float> samplesPositions(2, 0);
       samplesPositions.insert(samplesPositions.end(), hammSamples.begin(), hammSamples.end());
       // Remove lines which don't split anything
@@ -364,6 +379,7 @@ public:
           lines.erase(lines.begin() + i);
         }
       }
+
       if (!lines.empty())
       {
         specialTexels[texel_idx.y*config.width + texel_idx.x] = construct_bsp(lines, labels, samplesPositions, referenceSamples);

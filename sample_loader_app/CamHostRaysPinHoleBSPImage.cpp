@@ -65,14 +65,14 @@ public:
   SubPixelElement sample(float x, float y) const
   {
     SubPixelElement sample;
-    sample.objId = tracer->CastSingleRay(x * float(width), y * float(height)).objId;
+    sample.objId = tracer->CastSingleRay(x * float(width), y * float(height)).instId;
     return sample;
   }
 
   SubPixelElement fetch(uint32_t x, uint32_t y) const
   {
     SubPixelElement sample;
-    sample.objId = tracer->CastSingleRay(float(x)+0.5f, float(y)+0.5f).objId; 
+    sample.objId = tracer->CastSingleRay(float(x)+0.5f, float(y)+0.5f).instId; 
     return sample;
   }
 };
