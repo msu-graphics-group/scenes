@@ -294,6 +294,15 @@ public:
       }
 
     } // end of 'for (uint32_t lineId = 0, cluster1Id = 0, cluster2Id = referenceSamples.size() - 1; lineId < splitLinesCnt; ++lineId)'
+    
+    //for(auto& line : lines)
+    //{
+    //  float maxVal = std::max(std::abs(line[0]), std::max(std::abs(line[1]), std::abs(line[2])));
+    //  line[0] /= maxVal;
+    //  line[1] /= maxVal;
+    //  line[2] /= maxVal;
+    //}
+
     return lines;
   }
   
@@ -345,6 +354,15 @@ public:
       lines[i+2][1] = v0.x - v2.x; // B = (x2 - x1);
       lines[i+2][2] = -lines[i+2][0]*v2.x - lines[i+2][1]*v2.y; // C = -A*x1 - B*y1;
     }
+
+    //for(auto& line : lines)
+    //{
+    //  float maxVal = std::max(std::abs(line[0]), std::max(std::abs(line[1]), std::abs(line[2])));
+    //  line[0] /= maxVal;
+    //  line[1] /= maxVal;
+    //  line[2] /= maxVal;
+    //}
+
     return lines; 
   }
 
@@ -432,6 +450,11 @@ public:
       std::vector<uint32_t> labels; 
       std::vector<TexType> referenceSamples = RemoveDuplicatesAndMakeSVMLabels(samples, labels);
 
+      if(texel_x == 418 && texel_y == config.height-145-1) 
+      {
+        int a = 2;
+      }
+
       if (referenceSamples.size() == 1)
         continue;
 
@@ -439,7 +462,7 @@ public:
       specialLabels[texel_idx.y*config.width + texel_idx.x] = labels;
       #endif
 
-      std::vector<Line> lines  = GetLinesSVM(referenceSamples, labels);
+      std::vector<Line> lines = GetLinesSVM(referenceSamples, labels);
       //std::vector<Line> lines2 = GetLinesFromTriangles(referenceSamples, sampler, texel_x, texel_y);
       
       std::vector<float> samplesPositions = RemoveBadLines(lines);
