@@ -121,51 +121,8 @@ class SubPixelImageBSP
       }
     }
 
-    std::vector<Line> leftLines = lines;
-
-    for (int i = leftLines.size() - 1; i >= 0; --i)
-    {
-      uint32_t leftCnt = 0;
-      uint32_t rightCnt = 0;
-      for (uint32_t j = 0; j < leftSamples.size(); j += 2)
-      {
-        if (leftLines[i][0] * leftSamples[j] + leftLines[i][1] * leftSamples[j + 1] + leftLines[i][2] > 0.0f)
-        {
-          leftCnt++;
-        }
-        else
-        {
-          rightCnt++;
-        }
-      }
-      if (leftCnt == 0 || rightCnt == 0)
-      {
-        leftLines.erase(leftLines.begin() + i);
-      }
-    }
-
-    std::vector<Line> rightLines = lines;
-
-    for (int i = rightLines.size() - 1; i >= 0; --i)
-    {
-      uint32_t leftCnt = 0;
-      uint32_t rightCnt = 0;
-      for (uint32_t j = 0; j < rightSamples.size(); j += 2)
-      {
-        if (rightLines[i][0] * rightSamples[j] + rightLines[i][1] * rightSamples[j + 1] + rightLines[i][2] > 0.0f)
-        {
-          leftCnt++;
-        }
-        else
-        {
-          rightCnt++;
-        }
-      }
-      if (leftCnt == 0 || rightCnt == 0)
-      {
-        rightLines.erase(rightLines.begin() + i);
-      }
-    }
+    std::vector<Line> leftLines  = RemoveBadLines(lines, leftSamples);
+    std::vector<Line> rightLines = RemoveBadLines(lines, rightSamples);
 
     uint32_t nodeIdx = nodesCollection.size();
     nodesCollection.resize(nodesCollection.size() + 1);
@@ -384,9 +341,10 @@ public:
     return linesInPixel; 
   }
 
-  void RemoveBadLines(std::vector<Line>& lines, const std::vector<float>& samplesPositions)
+  std::vector<Line> RemoveBadLines(const std::vector<Line>& lines, const std::vector<float>& samplesPositions)
   {
     std::vector<Line> linesTemp;
+    linesTemp.reserve(lines.size());
     
     // Remove lines which don't split anything
     for (const auto& line : lines)
@@ -405,7 +363,7 @@ public:
         linesTemp.push_back(line);
     }
 
-    lines.swap(linesTemp);
+    return linesTemp;
   }
 
   std::vector<uint2> GetSuspiciosTexels(const std::vector<TexType>& a_singleRayData)
@@ -476,15 +434,13 @@ public:
       specialLabels[texel_idx.y*config.width + texel_idx.x] = labels;
       #endif
 
-      std::vector<Line> lines = GetLinesSVM(referenceSamples, labels);
-      //std::vector<Line> lines = GetLinesFromTriangles(referenceSamples, sampler, texel_x, texel_y);  
-      //if(lines.size() == 0)
-      //  lines = GetLinesSVM(referenceSamples, labels);
-
-      std::vector<float> samplesPositions(2, 0);
+      std::vector<float> samplesPositions(2, 0); // (0,0) + all hammersly samples
       samplesPositions.insert(samplesPositions.end(), hammSamples.begin(), hammSamples.end());
-      
-      RemoveBadLines(lines, samplesPositions);
+
+      std::vector<Line> lines = RemoveBadLines(GetLinesSVM(referenceSamples, labels), samplesPositions);
+      //std::vector<Line> lines = RemoveBadLines(GetLinesFromTriangles(referenceSamples, sampler, texel_x, texel_y), samplesPositions);  
+      //if(lines.size() == 0)
+      //  lines = RemoveBadLines(GetLinesSVM(referenceSamples, labels), samplesPositions);
 
       if (!lines.empty())
       {
