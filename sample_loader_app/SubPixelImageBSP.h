@@ -12,6 +12,7 @@
 #include <sstream>
 
 #include "svm.h"
+#include "render/raytracing.h"
 
 void PlaneHammersley(float *result, int n);
 
@@ -53,7 +54,6 @@ class SubPixelImageBSP
   std::unordered_map<uint32_t,  std::vector<uint32_t> > specialLabels;
   #endif
 
-
   uint32_t construct_bsp(std::vector<Line> lines, const std::vector<uint32_t> &labels, const std::vector<float> &samples, const std::vector<TexType> &texData)
   {
     uint32_t bestLineIdx = 0;
@@ -61,24 +61,22 @@ class SubPixelImageBSP
     for (uint32_t lineId = 0; lineId < lines.size() && bestLineScore > 0; ++lineId)
     {
       const Line &line = lines[lineId];
-      std::unordered_map<uint32_t, uint32_t> leftLabels;
-      std::unordered_map<uint32_t, uint32_t> rightLabels;
+      std::unordered_map<uint32_t, uint32_t> leftLabelsTemp;
+      std::unordered_map<uint32_t, uint32_t> rightLabelsTemp;
       for (uint32_t sampleId = 0, sampleEnd = labels.size(); sampleId < sampleEnd; sampleId++)
       {
         const auto currLabel   = labels[sampleId];
         const float signedDist = line[0] * samples[sampleId * 2] + line[1] * samples[sampleId * 2 + 1] + line[2];
         if (signedDist >= 0.f)
-          leftLabels[currLabel]++;
+          leftLabelsTemp[currLabel]++;
         else
-          rightLabels[currLabel]++;
+          rightLabelsTemp[currLabel]++;
       }
       uint32_t score = 0;
-      for (auto leftIt : leftLabels)
+      for (auto leftIt : leftLabelsTemp)
       {
-        if (rightLabels.count(leftIt.first) != 0)
-        {
-          score += std::min(leftIt.second, rightLabels[leftIt.first]);
-        }
+        if (rightLabelsTemp.count(leftIt.first) != 0)
+          score += std::min(leftIt.second, rightLabelsTemp[leftIt.first]);
       }
       if (score < bestLineScore)
       {
@@ -88,10 +86,10 @@ class SubPixelImageBSP
     }
 
     // Prepare subnodes data  
-    std::vector<uint32_t> leftLabels;
-    std::vector<uint32_t> rightLabels;
-    std::vector<float> leftSamples;
-    std::vector<float> rightSamples;
+    std::vector<uint32_t> leftLabels;  leftLabels.reserve(labels.size());
+    std::vector<uint32_t> rightLabels; rightLabels.reserve(labels.size());
+    std::vector<float> leftSamples;    leftSamples.reserve(samples.size());
+    std::vector<float> rightSamples;   rightSamples.reserve(samples.size());
 
     const Line &line = lines[bestLineIdx];
     bool leftIsLeaf = true;
@@ -126,28 +124,29 @@ class SubPixelImageBSP
 
     uint32_t nodeIdx = nodesCollection.size();
     nodesCollection.resize(nodesCollection.size() + 1);
-    BSPNode &root = nodesCollection.back();
-    root.split = line;
+    size_t rootOffset = nodesCollection.size()-1;      // previously: "auto& root = nodesCollection.back(); 
+                                                       // This is not valid because reference may become broken after next nodesCollection.resize() in subsequent recursive call of 'construct_bsp'! 
+    nodesCollection[rootOffset].split = line;
     if (leftIsLeaf || leftLines.empty())
     {
-      root.isLeftLeaf = 1;
-      root.leftIdx = leftLabels[0] + subtexelsCollection.size();
+      nodesCollection[rootOffset].isLeftLeaf = 1;
+      nodesCollection[rootOffset].leftIdx = leftLabels[0] + subtexelsCollection.size();
     }
     else
     {
-      root.isLeftLeaf = 0;
-      root.leftIdx = construct_bsp(leftLines, leftLabels, leftSamples, texData);
+      nodesCollection[rootOffset].isLeftLeaf = 0;
+      nodesCollection[rootOffset].leftIdx = construct_bsp(leftLines, leftLabels, leftSamples, texData);
     }
 
     if (rightIsLeaf || rightLines.empty())
     {
-      root.isRightLeaf = 1;
-      root.rightIdx = rightLabels[0] + subtexelsCollection.size();
+      nodesCollection[rootOffset].isRightLeaf = 1;
+      nodesCollection[rootOffset].rightIdx = rightLabels[0] + subtexelsCollection.size();
     }
     else
     {
-      root.isRightLeaf = 0;
-      root.rightIdx = construct_bsp(rightLines, rightLabels, rightSamples, texData);
+      nodesCollection[rootOffset].isRightLeaf = 0;
+      nodesCollection[rootOffset].rightIdx = construct_bsp(rightLines, rightLabels, rightSamples, texData);
     }
     return nodeIdx;
   }
@@ -251,14 +250,6 @@ public:
       }
 
     } // end of 'for (uint32_t lineId = 0, cluster1Id = 0, cluster2Id = referenceSamples.size() - 1; lineId < splitLinesCnt; ++lineId)'
-    
-    //for(auto& line : lines)
-    //{
-    //  float maxVal = std::max(std::abs(line[0]), std::max(std::abs(line[1]), std::abs(line[2])));
-    //  line[0] /= maxVal;
-    //  line[1] /= maxVal;
-    //  line[2] /= maxVal;
-    //}
 
     return lines;
   }
