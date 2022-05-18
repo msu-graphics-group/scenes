@@ -17,6 +17,8 @@ void PlaneHammersley(float *result, int n);
 
 #define STORE_LABELS
 
+//typedef SurfaceInfo TexType;
+
 template<typename TexType>
 class SubPixelImageBSP
 {
@@ -63,14 +65,12 @@ class SubPixelImageBSP
       std::unordered_map<uint32_t, uint32_t> rightLabels;
       for (uint32_t sampleId = 0, sampleEnd = labels.size(); sampleId < sampleEnd; sampleId++)
       {
-        if (line[0] * samples[sampleId * 2] + line[1] * samples[sampleId * 2 + 1] + line[2] >= 0.f)
-        {
-          leftLabels[labels[sampleId]]++;
-        }
+        const auto currLabel   = labels[sampleId];
+        const float signedDist = line[0] * samples[sampleId * 2] + line[1] * samples[sampleId * 2 + 1] + line[2];
+        if (signedDist >= 0.f)
+          leftLabels[currLabel]++;
         else
-        {
-          rightLabels[labels[sampleId]]++;
-        }
+          rightLabels[currLabel]++;
       }
       uint32_t score = 0;
       for (auto leftIt : leftLabels)
@@ -355,43 +355,57 @@ public:
       lines[i+2][2] = -lines[i+2][0]*v2.x - lines[i+2][1]*v2.y; // C = -A*x1 - B*y1;
     }
 
-    //for(auto& line : lines)
-    //{
-    //  float maxVal = std::max(std::abs(line[0]), std::max(std::abs(line[1]), std::abs(line[2])));
-    //  line[0] /= maxVal;
-    //  line[1] /= maxVal;
-    //  line[2] /= maxVal;
-    //}
+    // (4) exclude lines which don't have intersection with pixel bouding box using half-space equetions
+    //
+    const LiteMath::float2 c0(-1,-1); //#TODO: add radius here also
+    const LiteMath::float2 c1(-1,+1);
+    const LiteMath::float2 c2(+1,+1);
+    const LiteMath::float2 c3(+1,-1);
 
-    return lines; 
+    std::vector<Line> linesInPixel; linesInPixel.reserve(lines.size());
+    for(auto& line : lines)
+    {
+      const float halfDist0 = line[0]*c0.x + line[1]*c0.y + line[2];
+      const float halfDist1 = line[0]*c1.x + line[1]*c1.y + line[2];
+      const float halfDist2 = line[0]*c2.x + line[1]*c2.y + line[2];
+      const float halfDist3 = line[0]*c3.x + line[1]*c3.y + line[2];
+
+      const bool s0 = std::signbit(halfDist0);
+      const bool s1 = std::signbit(halfDist1);
+      const bool s2 = std::signbit(halfDist2);
+      const bool s3 = std::signbit(halfDist3);
+
+      if(s0 == s1 && s1 == s2 && s2 == s3)
+        continue;
+      
+      linesInPixel.push_back(line);
+    }
+
+    return linesInPixel; 
   }
 
-  std::vector<float> RemoveBadLines(std::vector<Line>& lines)
+  void RemoveBadLines(std::vector<Line>& lines, const std::vector<float>& samplesPositions)
   {
-    std::vector<float> samplesPositions(2, 0);
-    samplesPositions.insert(samplesPositions.end(), hammSamples.begin(), hammSamples.end());
+    std::vector<Line> linesTemp;
+    
     // Remove lines which don't split anything
-    for (int i = lines.size() - 1; i >= 0; --i)
+    for (const auto& line : lines)
     {
       uint32_t leftCnt = 0;
       uint32_t rightCnt = 0;
       for (uint32_t j = 0; j < samplesPositions.size(); j += 2)
       {
-        if (lines[i][0] * samplesPositions[j] + lines[i][1] * samplesPositions[j + 1] + lines[i][2] > 0.0f)
-        {
+        if (line[0] * samplesPositions[j] + line[1] * samplesPositions[j + 1] + line[2] > 0.0f)
           leftCnt++;
-        }
         else
-        {
           rightCnt++;
-        }
       }
-      if (leftCnt == 0 || rightCnt == 0)
-      {
-        lines.erase(lines.begin() + i);
-      }
+
+      if (leftCnt != 0 && rightCnt != 0)
+        linesTemp.push_back(line);
     }
-    return samplesPositions;
+
+    lines.swap(linesTemp);
   }
 
   std::vector<uint2> GetSuspiciosTexels(const std::vector<TexType>& a_singleRayData)
@@ -463,9 +477,15 @@ public:
       #endif
 
       std::vector<Line> lines = GetLinesSVM(referenceSamples, labels);
-      //std::vector<Line> lines2 = GetLinesFromTriangles(referenceSamples, sampler, texel_x, texel_y);
+      //std::vector<Line> lines = GetLinesFromTriangles(referenceSamples, sampler, texel_x, texel_y);  
+      //if(lines.size() == 0)
+      //  lines = GetLinesSVM(referenceSamples, labels);
+
+      std::vector<float> samplesPositions(2, 0);
+      samplesPositions.insert(samplesPositions.end(), hammSamples.begin(), hammSamples.end());
       
-      std::vector<float> samplesPositions = RemoveBadLines(lines);
+      RemoveBadLines(lines, samplesPositions);
+
       if (!lines.empty())
       {
         specialTexels[texel_idx.y*config.width + texel_idx.x] = construct_bsp(lines, labels, samplesPositions, referenceSamples);
