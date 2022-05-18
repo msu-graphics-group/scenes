@@ -43,6 +43,8 @@ struct SubPixelElement // can process as float4 in some cases
 {
   float    color[3] = {};
   uint32_t objId    = uint32_t(0xFFFFFFFF);
+  uint32_t geomId   = uint32_t(0xFFFFFFFF);
+  uint32_t primId   = uint32_t(0xFFFFFFFF);
   uint32_t hits     = 0;
 
   inline bool operator==(const SubPixelElement& rhs) const { return objId == rhs.objId; }
@@ -64,16 +66,34 @@ public:
 
   SubPixelElement sample(float x, float y) const
   {
+    auto internal = tracer->CastSingleRay(x * float(width), y * float(height));
     SubPixelElement sample;
-    sample.objId = tracer->CastSingleRay(x * float(width), y * float(height)).instId;
+    sample.objId  = internal.instId;
+    sample.geomId = internal.geomId;
+    sample.primId = internal.primId;
     return sample;
   }
 
   SubPixelElement fetch(uint32_t x, uint32_t y) const
   {
+    auto internal = tracer->CastSingleRay(float(x)+0.5f, float(y)+0.5f);
     SubPixelElement sample;
-    sample.objId = tracer->CastSingleRay(float(x)+0.5f, float(y)+0.5f).instId; 
+    sample.objId  = internal.instId; 
+    sample.geomId = internal.geomId;
+    sample.primId = internal.primId;
     return sample;
+  }
+
+  std::vector<LiteMath::float2> GetAllTriangleVerts2D(const SubPixelElement* a_compressed, size_t a_compressedNum) const 
+  { 
+    std::vector<SurfaceInfo> compressed2(a_compressedNum);
+    for(size_t i=0;i<a_compressedNum;i++)
+    {
+      compressed2[i].instId = a_compressed[i].objId;
+      compressed2[i].geomId = a_compressed[i].geomId;
+      compressed2[i].primId = a_compressed[i].primId;
+    }
+    return tracer->GetAllTriangleVerts2D(compressed2.data(), compressed2.size());
   }
 };
 

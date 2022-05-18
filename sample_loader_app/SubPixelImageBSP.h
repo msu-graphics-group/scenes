@@ -37,6 +37,26 @@ class SubPixelImageBSP
   std::vector<float> hammSamples;
   using Line = std::array<float, 3>;
 
+  Line NormalizeLine(const Line& a_rhs) 
+  {
+    Line res;
+    float absC = std::abs(a_rhs[2]);
+    if(absC == 0.0f)
+    {
+      float absMax = std::max(std::abs(a_rhs[0]), std::abs(a_rhs[1]));
+      res[0] = a_rhs[0]/absMax;
+      res[1] = a_rhs[1]/absMax;
+      res[2] = 0.0f;
+    }
+    else
+    {
+      res[0] = a_rhs[0]/absC;
+      res[1] = a_rhs[1]/absC;
+      res[2] = a_rhs[2]/absC;
+    }
+    return res;
+  }
+
   // Left means that dot(point, split) >= 0 for the point in left child
   struct BSPNode
   {
@@ -240,7 +260,7 @@ public:
       // Train SVM
       SVM svm;
       svm.fit(localSamples, localLabels, localSamples, localLabels);
-      lines.push_back(svm.get_weights());
+      lines.push_back(NormalizeLine(svm.get_weights()));
       // Update cluster ids
       cluster1Id++;
       if (cluster1Id == cluster2Id)
@@ -326,7 +346,7 @@ public:
       if(s0 == s1 && s1 == s2 && s2 == s3)
         continue;
       
-      linesInPixel.push_back(line);
+      linesInPixel.push_back(NormalizeLine(line));
     }
 
     return linesInPixel; 
@@ -425,11 +445,21 @@ public:
       specialLabels[texel_idx.y*config.width + texel_idx.x] = labels;
       #endif
 
-      std::vector<float> samplesPositions(2, 0); // (0,0) + all hammersly samples
+      std::vector<float> samplesPositions(10); // (0,0) + corners + all hammersly samples
+      samplesPositions[0] = 0.0f;
+      samplesPositions[1] = 0.0f;
+      samplesPositions[2] = -1.0f;
+      samplesPositions[3] = -1.0f;
+      samplesPositions[4] = -1.0f;
+      samplesPositions[5] = +1.0f;
+      samplesPositions[6] = +1.0f;
+      samplesPositions[7] = +1.0f;
+      samplesPositions[8] = +1.0f;
+      samplesPositions[9] = -1.0f;
       samplesPositions.insert(samplesPositions.end(), hammSamples.begin(), hammSamples.end());
 
-      std::vector<Line> lines = RemoveBadLines(GetLinesSVM(referenceSamples, labels), samplesPositions);
-      //std::vector<Line> lines = RemoveBadLines(GetLinesFromTriangles(referenceSamples, sampler, texel_x, texel_y), samplesPositions);  
+      std::vector<Line> lines  = RemoveBadLines(GetLinesSVM(referenceSamples, labels), samplesPositions);
+      std::vector<Line> lines2 = RemoveBadLines(GetLinesFromTriangles(referenceSamples, sampler, texel_x, texel_y), samplesPositions);  
       //if(lines.size() == 0)
       //  lines = RemoveBadLines(GetLinesSVM(referenceSamples, labels), samplesPositions);
 
