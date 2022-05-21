@@ -77,6 +77,7 @@ class SubPixelImageBSP
   std::unordered_map<uint32_t, uint32_t> specialTexels;
 
   #ifdef STORE_LABELS
+  std::vector<uint32_t> geomIdsPerPixel;
   std::unordered_map<uint32_t,  std::vector<uint32_t> > specialLabels;
   #endif
 
@@ -185,6 +186,9 @@ public:
     PlaneHammersley(hammSamples.data(), config.additionalSamplesCnt);
     for (float& v : hammSamples)                                       // [0,1] ==> [-0.5,0.5]
       v = (v - 0.5f) * 2.0f * config.radius;
+    #ifdef STORE_LABELS
+    geomIdsPerPixel.resize(config.height * config.width);
+    #endif
   }
 
   SubPixelImageBSP(uint32_t a_width, uint32_t a_height, float a_radius = 0.5f)
@@ -198,6 +202,9 @@ public:
     PlaneHammersley(hammSamples.data(), config.additionalSamplesCnt);
     for (float& v : hammSamples)                                      // [0,1] ==> [-0.5,0.5]
       v = (v - 0.5f) * 2.0f * config.radius;
+    #ifdef STORE_LABELS
+    geomIdsPerPixel.resize(config.height * config.width);
+    #endif
   }
 
   struct uint2 {
@@ -428,6 +435,9 @@ public:
     for (uint32_t y = 0; y < config.height; ++y) {
       for (uint32_t x = 0; x < config.width; ++x) {
         singleRayData[y * config.width + x] = sampler.fetch(x, y);
+        #ifdef STORE_LABELS
+        geomIdsPerPixel[y * config.width + x] = singleRayData[y * config.width + x].geomId;
+        #endif
       }
     }
 
@@ -472,11 +482,13 @@ public:
 
       #ifdef STORE_LABELS
       specialLabels[texel_idx.y*config.width + texel_idx.x] = labels;
+      for (int i = 0; i < samples.size(); ++i)
+        specialLabels[texel_idx.y*config.width + texel_idx.x][i] = samples[i].geomId;
       #endif
 
       std::vector<float> samplesPositions = GetSamplePositionsWithBorders(); 
-      std::vector<Line> lines = RemoveBadLines(GetLinesSVM(referenceSamples, labels), samplesPositions);
-      //std::vector<Line> lines = RemoveBadLines(GetLinesFromTriangles(referenceSamples, sampler, texel_x, texel_y), samplesPositions);   
+      // std::vector<Line> lines = RemoveBadLines(GetLinesSVM(referenceSamples, labels), samplesPositions);
+      std::vector<Line> lines = RemoveBadLines(GetLinesFromTriangles(referenceSamples, sampler, texel_x, texel_y), samplesPositions);   
 
       if (!lines.empty())
       {
@@ -544,6 +556,13 @@ public:
     float center[2] = {0.f, 0.f};
     out.write((char*)center, sizeof(center));
     out.write((char*)hammSamples.data(), sizeof(float) * hammSamples.size());
+    #ifdef STORE_LABELS
+    out.write((char*)&config.height, sizeof(config.height));
+    out.write((char*)&config.width, sizeof(config.width));
+    for (uint32_t i = 0; i < config.height; ++i)
+      for (uint32_t j = 0; j < config.width; ++j)
+        out.write((char*)&geomIdsPerPixel[(config.height - i - 1) * config.width + j], sizeof(geomIdsPerPixel[i * config.width + j]));
+    #endif
     out.close();
   }
 
