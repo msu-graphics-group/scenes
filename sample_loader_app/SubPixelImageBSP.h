@@ -40,19 +40,25 @@ class SubPixelImageBSP
   Line NormalizeLine(const Line& a_rhs) 
   {
     Line res;
-    float absC = std::abs(a_rhs[2]);
-    if(absC == 0.0f)
+    if(a_rhs[2] == 0.0f)
     {
-      float absMax = std::max(std::abs(a_rhs[0]), std::abs(a_rhs[1]));
-      res[0] = a_rhs[0]/absMax;
-      res[1] = a_rhs[1]/absMax;
+      if(std::abs(a_rhs[0]) > std::abs(a_rhs[1]))
+      {
+        res[0] = 1.0f;
+        res[1] = a_rhs[1]/a_rhs[0];
+      }
+      else
+      {
+        res[0] = a_rhs[0]/a_rhs[1];
+        res[1] = 1.0f;
+      }
       res[2] = 0.0f;
     }
     else
     {
-      res[0] = a_rhs[0]/absC;
-      res[1] = a_rhs[1]/absC;
-      res[2] = a_rhs[2]/absC;
+      res[0] = a_rhs[0]/a_rhs[2];
+      res[1] = a_rhs[1]/a_rhs[2];
+      res[2] = 1.0f;
     }
     return res;
   }
@@ -294,8 +300,8 @@ public:
 
     for(auto& v : tverts) 
     {
-      v.x = pixelSSX*(v.x - absPX2);
-      v.y = pixelSSY*(v.y - absPY2);
+      v.x = 0.5f*pixelSSX*(v.x - absPX2);
+      v.y = 0.5f*pixelSSY*(v.y - absPY2);
     }
     
     // (3) calc line equation
@@ -433,7 +439,7 @@ public:
       std::vector<uint32_t> labels; 
       std::vector<TexType> referenceSamples = RemoveDuplicatesAndMakeSVMLabels(samples, labels);
 
-      if(texel_x == 418 && texel_y == config.height-145-1) 
+      if(texel_x == 417 && texel_y == config.height-145-1)   
       {
         int a = 2;
       }
@@ -458,10 +464,8 @@ public:
       samplesPositions[9] = -1.0f;
       samplesPositions.insert(samplesPositions.end(), hammSamples.begin(), hammSamples.end());
 
-      std::vector<Line> lines  = RemoveBadLines(GetLinesSVM(referenceSamples, labels), samplesPositions);
-      std::vector<Line> lines2 = RemoveBadLines(GetLinesFromTriangles(referenceSamples, sampler, texel_x, texel_y), samplesPositions);  
-      //if(lines.size() == 0)
-      //  lines = RemoveBadLines(GetLinesSVM(referenceSamples, labels), samplesPositions);
+      std::vector<Line> lines = RemoveBadLines(GetLinesSVM(referenceSamples, labels), samplesPositions);
+      //std::vector<Line> lines = RemoveBadLines(GetLinesFromTriangles(referenceSamples, sampler, texel_x, texel_y), samplesPositions);   
 
       if (!lines.empty())
       {
