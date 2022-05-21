@@ -237,6 +237,24 @@ public:
     return referenceSamples;
   }
 
+  std::vector<float> GetSamplePositionsWithBorders()
+  {
+    std::vector<float> samplesPositions(10 + hammSamples.size()); // (0,0) + corners + all hammersly samples
+    samplesPositions.resize(10);
+    samplesPositions[0] = 0.0f;
+    samplesPositions[1] = 0.0f;
+    samplesPositions[2] = -1.0f;
+    samplesPositions[3] = -1.0f;
+    samplesPositions[4] = -1.0f;
+    samplesPositions[5] = +1.0f;
+    samplesPositions[6] = +1.0f;
+    samplesPositions[7] = +1.0f;
+    samplesPositions[8] = +1.0f;
+    samplesPositions[9] = -1.0f;
+    samplesPositions.insert(samplesPositions.end(), hammSamples.begin(), hammSamples.end());
+    return samplesPositions;
+  }
+
   std::vector<Line> GetLinesSVM(const std::vector<TexType>& referenceSamples, const std::vector<uint32_t>& labels)
   {
     std::vector<Line> lines; 
@@ -444,6 +462,11 @@ public:
         int a = 2;
       }
 
+      if(texel_x == 417 && texel_y == config.height-146-1)   
+      {
+        int b = 3;
+      }
+
       if (referenceSamples.size() == 1)
         continue;
 
@@ -451,25 +474,14 @@ public:
       specialLabels[texel_idx.y*config.width + texel_idx.x] = labels;
       #endif
 
-      std::vector<float> samplesPositions(10); // (0,0) + corners + all hammersly samples
-      samplesPositions[0] = 0.0f;
-      samplesPositions[1] = 0.0f;
-      samplesPositions[2] = -1.0f;
-      samplesPositions[3] = -1.0f;
-      samplesPositions[4] = -1.0f;
-      samplesPositions[5] = +1.0f;
-      samplesPositions[6] = +1.0f;
-      samplesPositions[7] = +1.0f;
-      samplesPositions[8] = +1.0f;
-      samplesPositions[9] = -1.0f;
-      samplesPositions.insert(samplesPositions.end(), hammSamples.begin(), hammSamples.end());
-
+      std::vector<float> samplesPositions = GetSamplePositionsWithBorders(); 
       std::vector<Line> lines = RemoveBadLines(GetLinesSVM(referenceSamples, labels), samplesPositions);
       //std::vector<Line> lines = RemoveBadLines(GetLinesFromTriangles(referenceSamples, sampler, texel_x, texel_y), samplesPositions);   
 
       if (!lines.empty())
       {
-        specialTexels[texel_idx.y*config.width + texel_idx.x] = construct_bsp(lines, labels, samplesPositions, referenceSamples);
+        const uint32_t offset = construct_bsp(lines, labels, samplesPositions, referenceSamples);
+        specialTexels[texel_idx.y*config.width + texel_idx.x] = offset;
         subtexelsCollection.insert(subtexelsCollection.end(), referenceSamples.begin(), referenceSamples.end());
       }
     }
