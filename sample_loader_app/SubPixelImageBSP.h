@@ -178,17 +178,34 @@ class SubPixelImageBSP
     return nodeIdx;
   }
 
-public:
-  SubPixelImageBSP(const Config &conf) : config(conf) 
+  void init(const Config &conf)
   {
     singleRayData.resize(config.width * config.height);
     hammSamples.resize(config.additionalSamplesCnt*2);
     PlaneHammersley(hammSamples.data(), config.additionalSamplesCnt);
+    // TODO: Fix additional samples
+    // config.additionalSamplesCnt += 5;
+    // hammSamples.push_back(0.5f);
+    // hammSamples.push_back(0.5f);
+    // hammSamples.push_back(0.0f);
+    // hammSamples.push_back(0.0f);
+    // hammSamples.push_back(0.0f);
+    // hammSamples.push_back(1.0f);
+    // hammSamples.push_back(1.0f);
+    // hammSamples.push_back(1.0f);
+    // hammSamples.push_back(1.0f);
+    // hammSamples.push_back(0.0f);
     for (float& v : hammSamples)                                       // [0,1] ==> [-0.5,0.5]
       v = (v - 0.5f) * 2.0f * config.radius;
     #ifdef STORE_LABELS
     geomIdsPerPixel.resize(config.height * config.width);
     #endif
+  }
+
+public:
+  SubPixelImageBSP(const Config &conf) : config(conf) 
+  {
+    init(config);
   }
 
   SubPixelImageBSP(uint32_t a_width, uint32_t a_height, float a_radius = 0.5f)
@@ -197,14 +214,7 @@ public:
     config.height         = a_height;
     config.radius         = a_radius;
     config.additionalSamplesCnt = 64;
-    singleRayData.resize(config.width * config.height);
-    hammSamples.resize(config.additionalSamplesCnt*2);
-    PlaneHammersley(hammSamples.data(), config.additionalSamplesCnt);
-    for (float& v : hammSamples)                                      // [0,1] ==> [-0.5,0.5]
-      v = (v - 0.5f) * 2.0f * config.radius;
-    #ifdef STORE_LABELS
-    geomIdsPerPixel.resize(config.height * config.width);
-    #endif
+    init(config);
   }
 
   struct uint2 {
@@ -244,24 +254,6 @@ public:
     return referenceSamples;
   }
 
-  std::vector<float> GetSamplePositionsWithBorders()
-  {
-    std::vector<float> samplesPositions(10 + hammSamples.size()); // (0,0) + corners + all hammersly samples
-    samplesPositions.resize(10);
-    samplesPositions[0] = 0.0f;
-    samplesPositions[1] = 0.0f;
-    samplesPositions[2] = -1.0f;
-    samplesPositions[3] = -1.0f;
-    samplesPositions[4] = -1.0f;
-    samplesPositions[5] = +1.0f;
-    samplesPositions[6] = +1.0f;
-    samplesPositions[7] = +1.0f;
-    samplesPositions[8] = +1.0f;
-    samplesPositions[9] = -1.0f;
-    samplesPositions.insert(samplesPositions.end(), hammSamples.begin(), hammSamples.end());
-    return samplesPositions;
-  }
-
   std::vector<Line> GetLinesSVM(const std::vector<TexType>& referenceSamples, const std::vector<uint32_t>& labels)
   {
     std::vector<Line> lines; 
@@ -276,15 +268,8 @@ public:
         if (labels[i] == cluster1Id || labels[i] == cluster2Id)
         {
           localLabels.push_back(labels[i] == cluster1Id ? 1 : -1);
-          if (i == 0)
-          {
-            localSamples.resize(2, 0.f);
-          }
-          else
-          {
-            localSamples.push_back(hammSamples[i * 2 - 2]);
-            localSamples.push_back(hammSamples[i * 2 - 1]);
-          }
+          localSamples.push_back(hammSamples[i * 2]);
+          localSamples.push_back(hammSamples[i * 2 + 1]);
         }
       }
 
@@ -444,7 +429,7 @@ public:
     // Collect suspicious (aliased, with high divergence in neighbourhood) texels.
     std::vector<uint2> suspiciosTexelIds = GetSuspiciosTexels(singleRayData);
    
-    const uint32_t samplesCount = config.additionalSamplesCnt + 1;
+    const uint32_t samplesCount = config.additionalSamplesCnt;
 
     // Process suspicious texels
     std::vector<TexType> samples;
@@ -452,11 +437,10 @@ public:
     for (auto texel_idx : suspiciosTexelIds)
     {
       samples.clear();
-      samples.push_back(singleRayData[texel_idx.y*config.width+texel_idx.x]);
       const uint32_t texel_x = texel_idx.x;
       const uint32_t texel_y = texel_idx.y;
       // Make new samples
-      for (uint32_t i = 0; i < config.additionalSamplesCnt; ++i)
+      for (uint32_t i = 0; i < hammSamples.size() / 2; ++i)
       {
         samples.push_back(sampler.sample((texel_x + 0.5f + hammSamples[2 * i + 0]) / float(config.width), 
                                          (texel_y + 0.5f + hammSamples[2 * i + 1]) / float(config.height)));
@@ -486,7 +470,7 @@ public:
         specialLabels[texel_idx.y*config.width + texel_idx.x][i] = samples[i].geomId;
       #endif
 
-      std::vector<float> samplesPositions = GetSamplePositionsWithBorders(); 
+      std::vector<float> samplesPositions = hammSamples; 
       // std::vector<Line> lines = RemoveBadLines(GetLinesSVM(referenceSamples, labels), samplesPositions);
       std::vector<Line> lines = RemoveBadLines(GetLinesFromTriangles(referenceSamples, sampler, texel_x, texel_y), samplesPositions);   
 
@@ -550,11 +534,9 @@ public:
   {
     std::stringstream ss;
     ss << a_path << "a_samples.bin";
-    int add_samples = int(hammSamples.size()/2) + 1;
+    int add_samples = int(hammSamples.size()/2);
     std::ofstream out(ss.str(), std::ios::binary | std::ios::out);
     out.write((char*)&add_samples, sizeof(add_samples));
-    float center[2] = {0.f, 0.f};
-    out.write((char*)center, sizeof(center));
     out.write((char*)hammSamples.data(), sizeof(float) * hammSamples.size());
     #ifdef STORE_LABELS
     out.write((char*)&config.height, sizeof(config.height));
