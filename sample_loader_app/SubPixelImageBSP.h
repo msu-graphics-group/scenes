@@ -183,18 +183,17 @@ class SubPixelImageBSP
     singleRayData.resize(config.width * config.height);
     hammSamples.resize(config.additionalSamplesCnt*2);
     PlaneHammersley(hammSamples.data(), config.additionalSamplesCnt);
-    // TODO: Fix additional samples
-    // config.additionalSamplesCnt += 5;
-    // hammSamples.push_back(0.5f);
-    // hammSamples.push_back(0.5f);
-    // hammSamples.push_back(0.0f);
-    // hammSamples.push_back(0.0f);
-    // hammSamples.push_back(0.0f);
-    // hammSamples.push_back(1.0f);
-    // hammSamples.push_back(1.0f);
-    // hammSamples.push_back(1.0f);
-    // hammSamples.push_back(1.0f);
-    // hammSamples.push_back(0.0f);
+    config.additionalSamplesCnt += 5;
+    hammSamples.push_back(0.5f);
+    hammSamples.push_back(0.5f);
+    hammSamples.push_back(0.0f);
+    hammSamples.push_back(0.0f);
+    hammSamples.push_back(0.0f);
+    hammSamples.push_back(1.0f);
+    hammSamples.push_back(1.0f);
+    hammSamples.push_back(1.0f);
+    hammSamples.push_back(1.0f);
+    hammSamples.push_back(0.0f);
     for (float& v : hammSamples)                                       // [0,1] ==> [-0.5,0.5]
       v = (v - 0.5f) * 2.0f * config.radius;
     #ifdef STORE_LABELS
@@ -380,7 +379,7 @@ public:
       uint32_t rightCnt = 0;
       for (uint32_t j = 0; j < samplesPositions.size(); j += 2)
       {
-        if (line[0] * samplesPositions[j] + line[1] * samplesPositions[j + 1] + line[2] > 0.0f)
+        if (line[0] * samplesPositions[j] + line[1] * samplesPositions[j + 1] + line[2] >= 0.0f)
           leftCnt++;
         else
           rightCnt++;
