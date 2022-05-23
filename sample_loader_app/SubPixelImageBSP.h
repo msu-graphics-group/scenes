@@ -309,8 +309,8 @@ public:
 
     for(auto& v : tverts) 
     {
-      v.x = 0.5f*pixelSSX*(v.x - absPX2);
-      v.y = 0.5f*pixelSSY*(v.y - absPY2);
+      v.x = config.radius*pixelSSX*(v.x - absPX2);
+      v.y = config.radius*pixelSSY*(v.y - absPY2);
     }
     
     // (3) calc line equation
@@ -340,10 +340,10 @@ public:
 
     // (4) exclude lines which don't have intersection with pixel bouding box using half-space equetions
     //
-    const LiteMath::float2 c0(-1,-1); //#TODO: add radius here also
-    const LiteMath::float2 c1(-1,+1);
-    const LiteMath::float2 c2(+1,+1);
-    const LiteMath::float2 c3(+1,-1);
+    const LiteMath::float2 c0 = LiteMath::float2(-1,-1)*config.radius;
+    const LiteMath::float2 c1 = LiteMath::float2(-1,+1)*config.radius;
+    const LiteMath::float2 c2 = LiteMath::float2(+1,+1)*config.radius;
+    const LiteMath::float2 c3 = LiteMath::float2(+1,-1)*config.radius;
 
     std::vector<Line> linesInPixel; linesInPixel.reserve(lines.size());
     for(auto& line : lines)
@@ -455,7 +455,7 @@ public:
         int a = 2;
       }
 
-      if(texel_x == 417 && texel_y == config.height-146-1)   
+      if((texel_x == 515 || texel_x == 516) && texel_y == config.height-474-1)   
       {
         int b = 3;
       }
@@ -470,7 +470,7 @@ public:
       #endif
 
       std::vector<float> samplesPositions = hammSamples; 
-      // std::vector<Line> lines = RemoveBadLines(GetLinesSVM(referenceSamples, labels), samplesPositions);
+      std::vector<Line> lines1 = RemoveBadLines(GetLinesSVM(referenceSamples, labels), samplesPositions);
       std::vector<Line> lines = RemoveBadLines(GetLinesFromTriangles(referenceSamples, sampler, texel_x, texel_y), samplesPositions);   
 
       if (!lines.empty())
