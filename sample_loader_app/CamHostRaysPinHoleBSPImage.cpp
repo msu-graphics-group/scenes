@@ -370,8 +370,8 @@ void PinHoleBSPImageAccum::FinishRendering()
       m_pFrameBuffer->dumpPixel(out2.c_str(), x1, y1);
   std::cout << "dumping sublixels finished!" << std::endl;
 
-  SaveUpsampledRegion(413,m_height-143-51,50,32);
-  SaveUpsampledRegion(413,143,           50,32);
+  SaveUpsampledRegion(400,m_height-130-51,50,32);
+  SaveUpsampledRegion(400,143,            50,32);
 }
 
 void PinHoleBSPImageAccum::SaveUpsampledRegion(int regionStartX, int regionStartY, int regionSize, int upSamplePower)

@@ -470,8 +470,8 @@ public:
       #endif
 
       std::vector<float> samplesPositions = hammSamples; 
-      std::vector<Line> lines1 = RemoveBadLines(GetLinesSVM(referenceSamples, labels), samplesPositions);
-      std::vector<Line> lines = RemoveBadLines(GetLinesFromTriangles(referenceSamples, sampler, texel_x, texel_y), samplesPositions);   
+      std::vector<Line> lines = RemoveBadLines(GetLinesSVM(referenceSamples, labels), samplesPositions);
+      //std::vector<Line> lines = RemoveBadLines(GetLinesFromTriangles(referenceSamples, sampler, texel_x, texel_y), samplesPositions);   
 
       if (!lines.empty())
       {
