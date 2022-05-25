@@ -235,7 +235,7 @@ public:
       bool refFound = false;
       for (uint32_t j = 0, je = referenceSamples.size(); j < je; ++j)
       {
-        if (referenceSamples[j] == samples[i])
+        if (referenceSamples[j].instId == samples[i].instId && referenceSamples[j].geomId == samples[i].geomId && referenceSamples[j].primId == samples[i].primId)
         {
           labels.push_back(j);
           refFound = true;
