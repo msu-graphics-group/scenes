@@ -222,7 +222,7 @@ public:
     uint32_t x, y;
   };
 
-  std::vector<TexType> RemoveDuplicatesAndMakeSVMLabels(const std::vector<TexType>& samples, std::vector<uint32_t>& labels)
+  std::vector<TexType> RemoveDuplicatesAndMakeLabels(const std::vector<TexType>& samples, std::vector<uint32_t>& labels)
   {
     std::vector<TexType> referenceSamples; 
     referenceSamples.reserve(samples.size());
@@ -235,7 +235,7 @@ public:
       bool refFound = false;
       for (uint32_t j = 0, je = referenceSamples.size(); j < je; ++j)
       {
-        if (referenceSamples[j].instId == samples[i].instId && referenceSamples[j].geomId == samples[i].geomId && referenceSamples[j].primId == samples[i].primId)
+        if (referenceSamples[j] == samples[i])
         {
           labels.push_back(j);
           refFound = true;
@@ -248,6 +248,32 @@ public:
         labels.push_back(referenceSamples.size());
         referenceSamples.push_back(samples[i]);
       }
+    }
+
+    return referenceSamples;
+  }
+
+  std::vector<TexType> RemoveDuplicatesForTList(const std::vector<TexType>& samples)
+  {
+    std::vector<TexType> referenceSamples; 
+    referenceSamples.reserve(samples.size());
+    
+    for (uint32_t i = 0; i < samples.size(); ++i)
+    {
+      bool refFound = false;
+      for (uint32_t j = 0, je = referenceSamples.size(); j < je; ++j)
+      {
+        if (referenceSamples[j].instId == samples[i].instId && 
+            referenceSamples[j].geomId == samples[i].geomId && 
+            referenceSamples[j].primId == samples[i].primId)
+        {
+          refFound = true;
+          break;
+        }
+      }
+
+      if (!refFound)
+        referenceSamples.push_back(samples[i]);
     }
 
     return referenceSamples;
@@ -448,17 +474,7 @@ public:
       // Make labels for samples
       //
       std::vector<uint32_t> labels; 
-      std::vector<TexType> referenceSamples = RemoveDuplicatesAndMakeSVMLabels(samples, labels);
-
-      if(texel_x == 417 && texel_y == config.height-145-1)   
-      {
-        int a = 2;
-      }
-
-      if((texel_x == 515 || texel_x == 516) && texel_y == config.height-474-1)   
-      {
-        int b = 3;
-      }
+      std::vector<TexType> referenceSamples = RemoveDuplicatesAndMakeLabels(samples, labels);
 
       if (referenceSamples.size() == 1)
         continue;
@@ -470,8 +486,8 @@ public:
       #endif
 
       std::vector<float> samplesPositions = hammSamples; 
-      std::vector<Line> lines = RemoveBadLines(GetLinesSVM(referenceSamples, labels), samplesPositions);
-      //std::vector<Line> lines = RemoveBadLines(GetLinesFromTriangles(referenceSamples, sampler, texel_x, texel_y), samplesPositions);   
+      //std::vector<Line> lines = RemoveBadLines(GetLinesSVM(referenceSamples, labels), samplesPositions);
+      std::vector<Line> lines = RemoveBadLines(GetLinesFromTriangles(RemoveDuplicatesForTList(samples), sampler, texel_x, texel_y), samplesPositions);   
 
       if (!lines.empty())
       {

@@ -42,13 +42,13 @@ using LiteMath::float2;
 struct SubPixelElement // can process as float4 in some cases
 {
   float    color[3] = {};
-  uint32_t objId    = uint32_t(0xFFFFFFFF);
+  uint32_t instId   = uint32_t(0xFFFFFFFF);
   uint32_t geomId   = uint32_t(0xFFFFFFFF);
   uint32_t primId   = uint32_t(0xFFFFFFFF);
   uint32_t hits     = 0;
 
-  inline bool operator==(const SubPixelElement& rhs) const { return objId == rhs.objId; }
-  inline bool operator!=(const SubPixelElement& rhs) const { return objId != rhs.objId; }
+  inline bool operator==(const SubPixelElement& rhs) const { return instId == rhs.instId; }
+  inline bool operator!=(const SubPixelElement& rhs) const { return instId != rhs.instId; }
 };
 
 
@@ -68,7 +68,7 @@ public:
   {
     auto internal = tracer->CastSingleRay(x * float(width), y * float(height));
     SubPixelElement sample;
-    sample.objId  = internal.instId;
+    sample.instId  = internal.instId;
     sample.geomId = internal.geomId;
     sample.primId = internal.primId;
     return sample;
@@ -78,7 +78,7 @@ public:
   {
     auto internal = tracer->CastSingleRay(float(x)+0.5f, float(y)+0.5f);
     SubPixelElement sample;
-    sample.objId  = internal.instId; 
+    sample.instId  = internal.instId; 
     sample.geomId = internal.geomId;
     sample.primId = internal.primId;
     return sample;
@@ -89,7 +89,7 @@ public:
     std::vector<SurfaceInfo> compressed2(a_compressedNum);
     for(size_t i=0;i<a_compressedNum;i++)
     {
-      compressed2[i].instId = a_compressed[i].objId;
+      compressed2[i].instId = a_compressed[i].instId;
       compressed2[i].geomId = a_compressed[i].geomId;
       compressed2[i].primId = a_compressed[i].primId;
     }
@@ -282,7 +282,7 @@ void PinHoleBSPImageAccum::AddSamplesContribution(float* out_color4f, const floa
       continue;
 
     auto& subPixel = m_pFrameBuffer->access(passData.x, passData.y); // process sample only if we hit same surface
-    if(int(subPixel.objId) == packedIndex) 
+    if(int(subPixel.instId) == packedIndex) 
     {
       subPixel.color[0] += color[0];
       subPixel.color[1] += color[1];
