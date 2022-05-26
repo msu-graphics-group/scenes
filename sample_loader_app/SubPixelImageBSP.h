@@ -225,32 +225,41 @@ class SubPixelImageBSP
     hammSamples.push_back(1.0f);
     hammSamples.push_back(0.0f);
 
-    hammSamples.push_back(0.5f);
+    hammSamples.push_back(0.2f);
     hammSamples.push_back(1.0f);
-    hammSamples.push_back(0.5f);
+    hammSamples.push_back(0.2f);
     hammSamples.push_back(0.0f);
     hammSamples.push_back(1.0f);
-    hammSamples.push_back(0.5f);
+    hammSamples.push_back(0.2f);
     hammSamples.push_back(0.0f);
-    hammSamples.push_back(0.5f);
+    hammSamples.push_back(0.2f);
 
-    hammSamples.push_back(0.25f);
+    hammSamples.push_back(0.4f);
     hammSamples.push_back(1.0f);
-    hammSamples.push_back(0.25f);
+    hammSamples.push_back(0.4f);
     hammSamples.push_back(0.0f);
     hammSamples.push_back(1.0f);
-    hammSamples.push_back(0.25f);
+    hammSamples.push_back(0.4f);
     hammSamples.push_back(0.0f);
-    hammSamples.push_back(0.25f);
+    hammSamples.push_back(0.4f);
 
-    hammSamples.push_back(0.75f);
+    hammSamples.push_back(0.6f);
     hammSamples.push_back(1.0f);
-    hammSamples.push_back(0.75f);
+    hammSamples.push_back(0.6f);
     hammSamples.push_back(0.0f);
     hammSamples.push_back(1.0f);
-    hammSamples.push_back(0.75f);
+    hammSamples.push_back(0.6f);
     hammSamples.push_back(0.0f);
-    hammSamples.push_back(0.75f);
+    hammSamples.push_back(0.6f);
+
+    hammSamples.push_back(0.8f);
+    hammSamples.push_back(1.0f);
+    hammSamples.push_back(0.8f);
+    hammSamples.push_back(0.0f);
+    hammSamples.push_back(1.0f);
+    hammSamples.push_back(0.8f);
+    hammSamples.push_back(0.0f);
+    hammSamples.push_back(0.8f);
 
     for (float& v : hammSamples)                                       // [0,1] ==> [-0.5,0.5]
       v = (v - 0.5f) * 2.0f * config.radius;
