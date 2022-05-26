@@ -81,6 +81,36 @@ class SubPixelImageBSP
   std::unordered_map<uint32_t,  std::vector<uint32_t> > specialLabels;
   #endif
 
+  uint32_t BadSplits(const std::vector<Line>& lines, const std::vector<uint32_t>& labels, const std::vector<float>& samples)
+  {
+    uint32_t bestLineScore = config.additionalSamplesCnt + 1; // Amount of wrong classified samples (wrong mean that major amount of samples with the same label are on another side of the line)
+    for (uint32_t lineId = 0; lineId < lines.size() && bestLineScore > 0; ++lineId)
+    {
+      const Line &line = lines[lineId];
+      std::unordered_map<uint32_t, uint32_t> leftLabelsTemp;
+      std::unordered_map<uint32_t, uint32_t> rightLabelsTemp;
+      for (uint32_t sampleId = 0, sampleEnd = labels.size(); sampleId < sampleEnd; sampleId++)
+      {
+        const auto currLabel   = labels[sampleId];
+        const float signedDist = line[0] * samples[sampleId * 2] + line[1] * samples[sampleId * 2 + 1] + line[2];
+        if (signedDist >= 0.f)
+          leftLabelsTemp[currLabel]++;
+        else
+          rightLabelsTemp[currLabel]++;
+      }
+      uint32_t score = 0;
+      for (auto leftIt : leftLabelsTemp)
+      {
+        if (rightLabelsTemp.count(leftIt.first) != 0)
+          score += std::min(leftIt.second, rightLabelsTemp[leftIt.first]);
+      }
+      if (score < bestLineScore)
+        bestLineScore = score;
+    }
+
+    return bestLineScore;
+  }
+
   uint32_t construct_bsp(std::vector<Line> lines, const std::vector<uint32_t> &labels, const std::vector<float> &samples, const std::vector<TexType> &texData)
   {
     uint32_t bestLineIdx = 0;
@@ -194,6 +224,34 @@ class SubPixelImageBSP
     hammSamples.push_back(1.0f);
     hammSamples.push_back(1.0f);
     hammSamples.push_back(0.0f);
+
+    hammSamples.push_back(0.5f);
+    hammSamples.push_back(1.0f);
+    hammSamples.push_back(0.5f);
+    hammSamples.push_back(0.0f);
+    hammSamples.push_back(1.0f);
+    hammSamples.push_back(0.5f);
+    hammSamples.push_back(0.0f);
+    hammSamples.push_back(0.5f);
+
+    hammSamples.push_back(0.25f);
+    hammSamples.push_back(1.0f);
+    hammSamples.push_back(0.25f);
+    hammSamples.push_back(0.0f);
+    hammSamples.push_back(1.0f);
+    hammSamples.push_back(0.25f);
+    hammSamples.push_back(0.0f);
+    hammSamples.push_back(0.25f);
+
+    hammSamples.push_back(0.75f);
+    hammSamples.push_back(1.0f);
+    hammSamples.push_back(0.75f);
+    hammSamples.push_back(0.0f);
+    hammSamples.push_back(1.0f);
+    hammSamples.push_back(0.75f);
+    hammSamples.push_back(0.0f);
+    hammSamples.push_back(0.75f);
+
     for (float& v : hammSamples)                                       // [0,1] ==> [-0.5,0.5]
       v = (v - 0.5f) * 2.0f * config.radius;
     #ifdef STORE_LABELS
@@ -362,6 +420,10 @@ public:
       lines[i+2][0] = v2.y - v0.y; // A = (y1 - y2);
       lines[i+2][1] = v0.x - v2.x; // B = (x2 - x1);
       lines[i+2][2] = -lines[i+2][0]*v2.x - lines[i+2][1]*v2.y; // C = -A*x1 - B*y1;
+
+      lines[i+0] = NormalizeLine(lines[i+0]);
+      lines[i+1] = NormalizeLine(lines[i+1]);
+      lines[i+2] = NormalizeLine(lines[i+2]);
     }
 
     // (4) exclude lines which don't have intersection with pixel bouding box using half-space equetions
@@ -387,7 +449,7 @@ public:
       if(s0 == s1 && s1 == s2 && s2 == s3)
         continue;
       
-      linesInPixel.push_back(NormalizeLine(line));
+      linesInPixel.push_back(line);
     }
 
     return linesInPixel; 
@@ -455,6 +517,8 @@ public:
     std::vector<uint2> suspiciosTexelIds = GetSuspiciosTexels(singleRayData);
    
     const uint32_t samplesCount = config.additionalSamplesCnt;
+    uint32_t badSplits = 0;
+    uint32_t borderPixels = 0;
 
     // Process suspicious texels
     std::vector<TexType> samples;
@@ -464,6 +528,7 @@ public:
       samples.clear();
       const uint32_t texel_x = texel_idx.x;
       const uint32_t texel_y = texel_idx.y;
+
       // Make new samples
       for (uint32_t i = 0; i < hammSamples.size() / 2; ++i)
       {
@@ -485,17 +550,36 @@ public:
         specialLabels[texel_idx.y*config.width + texel_idx.x][i] = samples[i].geomId;
       #endif
 
-      std::vector<float> samplesPositions = hammSamples; 
-      //std::vector<Line> lines = RemoveBadLines(GetLinesSVM(referenceSamples, labels), samplesPositions);
-      std::vector<Line> lines = RemoveBadLines(GetLinesFromTriangles(RemoveDuplicatesForTList(samples), sampler, texel_x, texel_y), samplesPositions);   
+      if((texel_x >= 534 && texel_x <= 536) && texel_y == config.height-921-1)
+      {
+        int a = 2;
+      }
+
+      //std::vector<Line> lines = RemoveBadLines(GetLinesSVM(referenceSamples, labels), hammSamples);
+      std::vector<Line> lines = RemoveBadLines(GetLinesFromTriangles(RemoveDuplicatesForTList(samples), sampler, texel_x, texel_y), hammSamples);   
+
+      uint32_t tScores = BadSplits(lines, labels, hammSamples);
+      if(tScores > 0) 
+      {
+        auto lines2 = RemoveBadLines(GetLinesSVM(referenceSamples, labels), hammSamples);
+        badSplits++;
+        uint32_t sScores = BadSplits(lines2, labels, hammSamples);
+        if(sScores < tScores)
+          lines = lines2;
+      }
 
       if (!lines.empty())
       {
-        const uint32_t offset = construct_bsp(lines, labels, samplesPositions, referenceSamples);
+        const uint32_t offset = construct_bsp(lines, labels, hammSamples, referenceSamples);
         specialTexels[texel_idx.y*config.width + texel_idx.x] = offset;
         subtexelsCollection.insert(subtexelsCollection.end(), referenceSamples.begin(), referenceSamples.end());
+        borderPixels++;
       }
     }
+
+    auto oldPrec = std::cout.precision(2);
+    std::cout << "[BspImage]: BadSplitsNum = " << badSplits << ", which is " << 100.0f*float(badSplits)/float(borderPixels) << "% of border pixels" << std::endl;
+    std::cout.precision(oldPrec);
   }
 
   TexType& access(float x, float y)

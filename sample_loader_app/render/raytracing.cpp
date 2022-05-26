@@ -64,6 +64,14 @@ void RayTracer::kernel_RayTrace(uint32_t tidX, uint32_t tidY, const LiteMath::fl
   res.geomId = hit.geomId;
   res.primId = hit.primId;
   res.color  = m_palette[hit.instId % palette_size];
+
+  //if(res.geomId == 1 && res.primId == 140171)
+  //  res.color = 0x0000FF00;
+  //else if(res.geomId == 1 && (res.primId == 140231))
+  //  res.color = 0x00FF0000;
+  //else if(res.geomId == 1 && (res.primId == 68695))
+  //  res.color = 0x000000FF;
+
   out_sample[tidY * m_width + tidX] = res;
 }
 
