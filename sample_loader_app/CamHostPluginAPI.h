@@ -15,6 +15,13 @@ struct RayPart2
   float dummy;
 };
 
+struct CameraProperties
+{
+    float fovDegrees[2];    ///<! full camera FoV [X, Y] in degrees
+    float focusDistance;    ///<! Estimated focus distance in meters
+    float pinholeZ;         ///<! Estimated pinhole camera offset along camera optical axis in meters
+};
+
 struct IHostRaysAPI
 { 
   virtual ~IHostRaysAPI() {}
@@ -27,6 +34,12 @@ struct IHostRaysAPI
    \param a_camNodeText   - all other camera parameters which you can directly by reading this node
   */
   virtual void SetParameters(int a_width, int a_height, const float a_projInvMatrix[16], const wchar_t* a_camNodeText) {}
+
+  /**
+  \brief Query camera properties after initialization
+  \param cameraProperties - returned properties
+  */
+  virtual void GetCameraProperties(CameraProperties* cameraProperties) {}
 
   /** 
    \brief Put portion of rays in execution queue

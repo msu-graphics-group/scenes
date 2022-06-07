@@ -35,6 +35,7 @@ using LiteMath::float2;
 #include <random>
 
 #include "render/image_save.h"
+#include "../loader/hydraxml.h"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -113,6 +114,7 @@ public:
   PinHoleBSPImageAccum() { hr_qmc::init(table); m_globalCounter = 0; }
   
   std::string outImageFolder;
+  std::string m_scenefile;
 
   void SetParameters(int a_width, int a_height, const float a_projInvMatrix[16], const wchar_t* a_camNodeText) override
   {
@@ -133,9 +135,8 @@ public:
 
     m_pFrameBuffer = std::make_unique<BSPImage4f>(a_width, a_height, 0.5f);
 
-    //std::string scenePath = "/home/frol/PROG/msu-graphics-group/scenes/01_simple_scenes/instanced_objects.xml"; //#TODO: pass scene path here!
-    std::string scenePath = "/home/frol/PROG/msu-graphics-group/scenes/01_simple_scenes/bunny_cornell.xml";       //#TODO: pass scene path here!
-    outImageFolder        = "/home/frol/PROG/msu-graphics-group/scenes/sample_loader_app";
+    std::string scenePath = m_scenefile;
+    outImageFolder        = "."; //"/home/frol/PROG/msu-graphics-group/scenes/sample_loader_app";
     
     std::cout << "[PinHoleBSP]: loading scene from " << scenePath.c_str() << std::endl;
     auto pRayTracerCPU = std::make_shared<RayTracer>(a_width, a_height);
@@ -184,6 +185,7 @@ public:
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+
 void PinHoleBSPImageAccum::ReadParamsFromSettingsNode(pugi::xml_node a_node)
 {
   const uint64_t address = a_node.child(L"remapInstAddress").text().as_ullong();
@@ -191,6 +193,10 @@ void PinHoleBSPImageAccum::ReadParamsFromSettingsNode(pugi::xml_node a_node)
 
   m_pInstRemapTable = reinterpret_cast<int32_t*>(address);
   m_pInstRemapSize  = int32_t(size);
+
+  const std::wstring folder = a_node.child(L"xmlfilepath").text().as_string();
+  m_scenefile = hydra_xml::ws2s(folder); // "/" + hydra_xml::ws2s(statef);
+  std::cout << "[ReadParamsFromSettingsNode]: m_scenefile = " << m_scenefile.c_str() << std::endl;
 }
 
 static inline int myPackXY1616(int x, int y) { return (y << 16) | (x & 0x0000FFFF); }

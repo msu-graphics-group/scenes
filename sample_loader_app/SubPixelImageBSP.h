@@ -555,14 +555,14 @@ public:
 
       #ifdef STORE_LABELS
       specialLabels[texel_idx.y*config.width + texel_idx.x] = labels;
-      for (int i = 0; i < samples.size(); ++i)
+      for (size_t i = 0; i < samples.size(); ++i)
         specialLabels[texel_idx.y*config.width + texel_idx.x][i] = samples[i].geomId;
       #endif
 
-      if((texel_x >= 534 && texel_x <= 536) && texel_y == config.height-921-1)
-      {
-        int a = 2;
-      }
+      //if((texel_x >= 534 && texel_x <= 536) && texel_y == config.height-921-1)
+      //{
+      //  int a = 2;
+      //}
 
       //std::vector<Line> lines = RemoveBadLines(GetLinesSVM(referenceSamples, labels), hammSamples);
       std::vector<Line> lines = RemoveBadLines(GetLinesFromTriangles(RemoveDuplicatesForTList(samples), sampler, texel_x, texel_y), hammSamples);   
