@@ -52,9 +52,13 @@ struct SubPixelElement // can process as float4 in some cases
   inline bool operator!=(const SubPixelElement& rhs) const { return instId != rhs.instId; }
 };
 
+#define NAIVE_IMPL
 
+#ifdef NAIVE_IMPL
+using BSPImage4f = SubPixelImageNaive<SubPixelElement>;
+#else
 using BSPImage4f = SubPixelImageBSP<SubPixelElement>;
-//using BSPImage4f = SubPixelImageNaive<SubPixelElement>;
+#endif
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -296,7 +300,12 @@ void PinHoleBSPImageAccum::AddSamplesContribution(float* out_color4f, const floa
       continue;
     
     auto& subPixel = m_pFrameBuffer->access(passData.x, passData.y); // process sample only if we hit same surface
+
+    #ifdef NAIVE_IMPL
+    if(true) 
+    #else
     if(int(subPixel.instId) == packedIndex) 
+    #endif
     {
       subPixel.color[0] += color[0];
       subPixel.color[1] += color[1];
@@ -376,11 +385,11 @@ void PinHoleBSPImageAccum::FinishRendering()
   saveImageLDR(out1.c_str(), imageLDR, m_width, m_height, 4);
   
   //bunny scene:
-  //SaveUpsampledRegion(400,m_height-130-50-1,50,16);
-  //SaveUpsampledRegion(400,143,              50,16);
-  //SaveUpsampledRegion(520,m_height-915-25-1,50,16);
-  //SaveUpsampledRegion(590,m_height-600-25-1,50,16);
-  //SaveUpsampledRegion(540,m_height-455-25-1,50,16);
+  SaveUpsampledRegion(400,m_height-130-50-1,50,16);
+  SaveUpsampledRegion(400,143,              50,16);
+  SaveUpsampledRegion(520,m_height-915-25-1,50,16);
+  SaveUpsampledRegion(590,m_height-600-25-1,50,16);
+  SaveUpsampledRegion(540,m_height-455-25-1,50,16);
 
   //inst scene:
   //SaveUpsampledRegion(110,m_height-725-50-1,50,16);
@@ -390,11 +399,11 @@ void PinHoleBSPImageAccum::FinishRendering()
   //SaveUpsampledRegion(450,m_height-338-40-1,50,16);
 
   //self-illum:
-  SaveUpsampledRegion(175,m_height-117-1,50,16);
-  SaveUpsampledRegion(415,m_height-305-25-1,50,16);
-  SaveUpsampledRegion(510,m_height-720-50-1,50,16);
-  SaveUpsampledRegion(225,m_height-80-50-1, 50,16);
-  SaveUpsampledRegion(760,m_height-225-40-1,50,16);
+  //SaveUpsampledRegion(175,m_height-117-1,50,16);
+  //SaveUpsampledRegion(415,m_height-305-25-1,50,16);
+  //SaveUpsampledRegion(510,m_height-720-50-1,50,16);
+  //SaveUpsampledRegion(225,m_height-80-50-1, 50,16);
+  //SaveUpsampledRegion(760,m_height-225-40-1,50,16);
 
   //hairballs:
   //SaveUpsampledRegion(175,m_height-320-40-1,50,16);
