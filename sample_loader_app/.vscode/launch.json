@@ -45,7 +45,7 @@
         },
 
         {
-            "name": "Run dll under hydra",
+            "name": "dll/hydra(bunny)",
             "type": "cppdbg",
             "request": "launch",
             "program": "/home/frol/hydra/hydra",
@@ -65,7 +65,145 @@
                     "ignoreFailures": true
                 }
             ]
-        }
+        },
+
+        {
+            "name": "dll/hydra(inst)",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "/home/frol/hydra/hydra",
+            "args": ["-inputlib", "/home/frol/PROG/msu-graphics-group/scenes/01_simple_scenes", 
+                     "-statefile", "instanced_objects.xml",
+                     "-out", "z_out3.png",
+                     "-nowindow", "1", "-pack_surf_id", "1", "-spp", "1024"],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+
+        {
+            "name": "dll/hydra(hairballs)",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "/home/frol/hydra/hydra",
+            "args": ["-inputlib", "/home/frol/PROG/msu-graphics-group/scenes/03_classic_scenes/04_hair_balls", 
+                     "-statefile", "statex_00001.xml",
+                     "-out", "z_out3.png",
+                     "-nowindow", "1", "-pack_surf_id", "1", "-spp", "4096"],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+
+        {
+            "name": "dll/hydra(orb32)",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "/home/frol/hydra/hydra",
+            "args": ["-inputlib", "/home/frol/PROG/msu-graphics-group/scenes/09_orb/L3.2_exterior_hydra", 
+                     "-statefile", "statex_00001.xml",
+                     "-out", "z_out3.png",
+                     "-nowindow", "1", "-pack_surf_id", "1", "-spp", "4096"],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+
+        {
+            "name": "dll/hydra(tree)",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "/home/frol/hydra/hydra",
+            "args": ["-inputlib", "/home/frol/PROG/msu-graphics-group/scenes/02_casual_effects/white_oak", 
+                     "-statefile", "statex_00001.xml",
+                     "-out", "z_out3.png",
+                     "-nowindow", "1", "-pack_surf_id", "1", "-spp", "256"],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+
+        {
+            "name": "dll/hydra(cry_sponza)",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "/home/frol/hydra/hydra",
+            "args": ["-inputlib", "/home/frol/PROG/msu-graphics-group/scenes/03_classic_scenes/02_cry_sponza", 
+                     "-statefile", "statex_00001.xml",
+                     "-out", "z_out3.png",
+                     "-nowindow", "1", "-pack_surf_id", "1", "-spp", "4096"],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+
+        {
+            "name": "dll/hydra(self-illum)",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "/home/frol/hydra/hydra",
+            "args": ["-inputlib", "/home/frol/PROG/msu-graphics-group/scenes/09_orb/L11_selfillum_hydra", 
+                     "-statefile", "statex_00001.xml",
+                     "-out", "z_out3.png",
+                     "-nowindow", "1", "-pack_surf_id", "1", "-spp", "4096"],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
         
         
 

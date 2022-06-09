@@ -16,8 +16,7 @@
 
 void PlaneHammersley(float *result, int n);
 
-#define STORE_LABELS
-
+//#define STORE_LABELS
 //typedef SurfaceInfo TexType;
 
 template<typename TexType>
@@ -528,7 +527,9 @@ public:
     const uint32_t samplesCount = config.additionalSamplesCnt;
     uint32_t badSplits = 0;
     uint32_t borderPixels = 0;
-
+    
+    std::cout << "suspiciosTexelIds.size() = " << suspiciosTexelIds.size() << std::endl;
+    size_t texleId = 0;
     // Process suspicious texels
     std::vector<TexType> samples;
     samples.reserve(samplesCount);
@@ -584,8 +585,16 @@ public:
         subtexelsCollection.insert(subtexelsCollection.end(), referenceSamples.begin(), referenceSamples.end());
         borderPixels++;
       }
-    }
 
+      texleId++;
+      if(texleId % 100 == 0)
+      {
+        std::cout << "progress = " << int( 100.0f*float(texleId)/float(suspiciosTexelIds.size()) ) << "% \r";
+        std::cout.flush();
+      }
+    }
+    
+    std::cout << std::endl;
     auto oldPrec = std::cout.precision(2);
     std::cout << "[BspImage]: BadSplitsNum = " << badSplits << ", which is " << 100.0f*float(badSplits)/float(borderPixels) << "% of border pixels" << std::endl;
     std::cout.precision(oldPrec);

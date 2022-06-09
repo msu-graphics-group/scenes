@@ -143,7 +143,10 @@ public:
     auto loaded = pRayTracerCPU->LoadScene(scenePath.c_str()); 
     if(!loaded)
       std::cout << "[PinHoleBSP]: can't load scene from " << scenePath.c_str() << std::endl;
-
+    
+    for(int i=0;i<HOST_RAYS_PIPELINE_LENGTH;i++)
+      m_pipeline[i].resize(0);
+  
     std::cout << "[PinHoleBSP]: constructing BSPImage ... " << std::endl;
     m_pFrameBuffer->configure(ZeroColorRTSampler(pRayTracerCPU, a_width, a_height));
   }
@@ -213,7 +216,7 @@ void PinHoleBSPImageAccum::MakeRaysBlock(RayPart1* out_rayPosAndNear, RayPart2* 
   if(m_pipeline[0].size() == 0)
   {
     for(int i=0;i<HOST_RAYS_PIPELINE_LENGTH;i++)
-    m_pipeline[i].resize(in_blockSize);
+      m_pipeline[i].resize(in_blockSize);
   }
 
   const int putID = passId % HOST_RAYS_PIPELINE_LENGTH;
@@ -271,6 +274,9 @@ void PinHoleBSPImageAccum::MakeRaysBlock(RayPart1* out_rayPosAndNear, RayPart2* 
 
 void PinHoleBSPImageAccum::AddSamplesContribution(float* out_color4f, const float* colors4f, size_t in_blockSize, uint32_t a_width, uint32_t a_height, int passId)
 {
+  if(m_pipeline[0].size() == 0)
+    return;
+
   const int takeID = (passId + HOST_RAYS_PIPELINE_LENGTH - 2) % HOST_RAYS_PIPELINE_LENGTH;
 
   float4*       out_color = (float4*)out_color4f;
@@ -280,13 +286,15 @@ void PinHoleBSPImageAccum::AddSamplesContribution(float* out_color4f, const floa
   {
     const auto color = colors[i];
     auto packedIndex = myAsInt(color.w);
+    if(packedIndex < 0)
+      continue;
     if(packedIndex < m_pInstRemapSize)
       packedIndex = m_pInstRemapTable[packedIndex];
 
     const PipeThrough& passData = m_pipeline[takeID][i];
     if(passData.x == 1.0f || passData.y == 1.0f)
       continue;
-
+    
     auto& subPixel = m_pFrameBuffer->access(passData.x, passData.y); // process sample only if we hit same surface
     if(int(subPixel.instId) == packedIndex) 
     {
@@ -366,18 +374,35 @@ void PinHoleBSPImageAccum::FinishRendering()
 
   std::string out1 = outImageFolder + "/z_out1_bsp.png";
   saveImageLDR(out1.c_str(), imageLDR, m_width, m_height, 4);
-
   
-  std::cout << "dumping sublixels ..." << std::endl;
-  std::string out2 = outImageFolder + "/debug_pixels/";
-  m_pFrameBuffer->dumpSamples(out2.c_str());
-  for (uint32_t y1 = 0; y1 < m_height; ++y1)
-    for (uint32_t x1 = 0; x1 < m_width; ++x1)
-      m_pFrameBuffer->dumpPixel(out2.c_str(), x1, y1);
-  std::cout << "dumping sublixels finished!" << std::endl;
+  //bunny scene:
+  //SaveUpsampledRegion(400,m_height-130-50-1,50,16);
+  //SaveUpsampledRegion(400,143,              50,16);
+  //SaveUpsampledRegion(520,m_height-915-25-1,50,16);
+  //SaveUpsampledRegion(590,m_height-600-25-1,50,16);
+  //SaveUpsampledRegion(540,m_height-455-25-1,50,16);
 
-  SaveUpsampledRegion(400,m_height-130-51,50,32);
-  SaveUpsampledRegion(400,143,            50,32);
+  //inst scene:
+  //SaveUpsampledRegion(110,m_height-725-50-1,50,16);
+  //SaveUpsampledRegion(260,m_height-325-50-1,50,16);
+  //SaveUpsampledRegion(175,m_height-320-40-1,50,16);
+  //SaveUpsampledRegion(520,m_height-726-40-1,50,16);
+  //SaveUpsampledRegion(450,m_height-338-40-1,50,16);
+
+  //self-illum:
+  SaveUpsampledRegion(175,m_height-117-1,50,16);
+  SaveUpsampledRegion(415,m_height-305-25-1,50,16);
+  SaveUpsampledRegion(510,m_height-720-50-1,50,16);
+  SaveUpsampledRegion(225,m_height-80-50-1, 50,16);
+  SaveUpsampledRegion(760,m_height-225-40-1,50,16);
+
+  //hairballs:
+  //SaveUpsampledRegion(175,m_height-320-40-1,50,16);
+  //SaveUpsampledRegion(450,m_height-350-40-1,50,16);
+  //SaveUpsampledRegion(140,m_height-360-40-1,50,16);
+  //SaveUpsampledRegion(322,m_height-400-40-1,50,16);
+  //SaveUpsampledRegion(620,m_height-765-40-1,50,16);
+  
 }
 
 void PinHoleBSPImageAccum::SaveUpsampledRegion(int regionStartX, int regionStartY, int regionSize, int upSamplePower)
