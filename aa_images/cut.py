@@ -1,6 +1,6 @@
 import cv2, os
 
-fnames = ["z_out1_bsp.png", "z_out1_naive.png", "z_out3.png"] # "z_out_16K.png"
+fnames = ["z_out1_bsp.png", "z_out1_naive.png", "z_out3.png", "z_out_1K_ds.png"]
 
 
 def process_folder(path, crop, out_folder):
