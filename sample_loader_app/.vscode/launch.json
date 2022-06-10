@@ -52,7 +52,7 @@
             "args": ["-inputlib", "/home/frol/PROG/msu-graphics-group/scenes/01_simple_scenes", 
                      "-statefile", "bunny_cornell.xml",
                      "-out", "z_out3.png",
-                     "-nowindow", "1", "-pack_surf_id", "1"],
+                     "-nowindow", "1", "-pack_surf_id", "1", "-spp", "256"],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],

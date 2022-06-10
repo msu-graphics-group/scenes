@@ -560,12 +560,6 @@ public:
         specialLabels[texel_idx.y*config.width + texel_idx.x][i] = samples[i].geomId;
       #endif
 
-      //if((texel_x >= 534 && texel_x <= 536) && texel_y == config.height-921-1)
-      //{
-      //  int a = 2;
-      //}
-
-      //std::vector<Line> lines = RemoveBadLines(GetLinesSVM(referenceSamples, labels), hammSamples);
       std::vector<Line> lines = RemoveBadLines(GetLinesFromTriangles(RemoveDuplicatesForTList(samples), sampler, texel_x, texel_y), hammSamples);   
 
       uint32_t tScores = BadSplits(lines, labels, hammSamples);
@@ -596,7 +590,9 @@ public:
     
     std::cout << std::endl;
     auto oldPrec = std::cout.precision(2);
-    std::cout << "[BspImage]: BadSplitsNum = " << badSplits << ", which is " << 100.0f*float(badSplits)/float(borderPixels) << "% of border pixels" << std::endl;
+    std::cout << "[BspImage]: borderPixels = " << borderPixels           << std::endl;
+    std::cout << "[BspImage]: totalNodes   = " << nodesCollection.size() << std::endl;
+    std::cout << "[BspImage]: BadSplitsNum = " << badSplits              << ", which is " << 100.0f*float(badSplits)/float(borderPixels) << "% of border pixels" << std::endl;
     std::cout.precision(oldPrec);
   }
 

@@ -52,7 +52,7 @@ struct SubPixelElement // can process as float4 in some cases
   inline bool operator!=(const SubPixelElement& rhs) const { return instId != rhs.instId; }
 };
 
-#define NAIVE_IMPL
+//#define NAIVE_IMPL
 
 #ifdef NAIVE_IMPL
 using BSPImage4f = SubPixelImageNaive<SubPixelElement>;
