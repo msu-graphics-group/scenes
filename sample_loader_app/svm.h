@@ -34,7 +34,7 @@ struct SVM
 
   std::array<float, 3> weights;
 public:
-  SVM(float etha_ = 0.01, float alpha_ = 0.1, int epochs_ = 1000):
+  SVM(float etha_ = 0.01, float alpha_ = 0.1, int epochs_ = 50):
   etha(etha_), alpha(alpha_), epochs(epochs_) {}
 
   void fit(const std::vector<float> &X_train, const std::vector<int> &Y_train);
