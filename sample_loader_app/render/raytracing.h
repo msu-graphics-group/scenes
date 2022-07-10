@@ -5,6 +5,7 @@
 #include <memory>
 #include <array>
 #include <iostream>
+#include <vector>
 #include "LiteMath.h"
 #include "CrossRT.h"
 

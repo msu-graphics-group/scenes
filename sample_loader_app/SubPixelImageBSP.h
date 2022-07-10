@@ -207,7 +207,7 @@ class SubPixelImageBSP
     return nodeIdx;
   }
 
-  void init(const Config &conf)
+  void init()
   {
     singleRayData.resize(config.width * config.height);
     hammSamples.resize(config.additionalSamplesCnt*2);
@@ -270,7 +270,7 @@ class SubPixelImageBSP
 public:
   SubPixelImageBSP(const Config &conf) : config(conf) 
   {
-    init(config);
+    init();
   }
 
   SubPixelImageBSP(uint32_t a_width, uint32_t a_height, float a_radius = 0.5f)
@@ -279,7 +279,7 @@ public:
     config.height         = a_height;
     config.radius         = a_radius;
     config.additionalSamplesCnt = 64;
-    init(config);
+    init();
   }
 
   struct uint2 {
@@ -598,8 +598,8 @@ public:
 
   TexType& access(float x, float y)
   {
-    const uint32_t x_texel = x * config.width;
-    const uint32_t y_texel = y * config.height;
+    const uint32_t x_texel = static_cast<uint32_t>(x * config.width);
+    const uint32_t y_texel = static_cast<uint32_t>(y * config.height);
     const uint32_t texel_id = y_texel * config.width + x_texel;
     if (specialTexels.count(texel_id) == 0)
       return singleRayData[texel_id];

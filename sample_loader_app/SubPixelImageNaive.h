@@ -25,7 +25,7 @@ class SubPixelImageNaive
     float invHeight;
   } config;
 
-  SubPixelImageNaive(uint32_t a_width, uint32_t a_height, float a_radius = 0.5f)
+  SubPixelImageNaive(uint32_t a_width, uint32_t a_height)
   {
     config.width   = a_width;
     config.height  = a_height;
@@ -51,10 +51,14 @@ class SubPixelImageNaive
   void configure(const BaseSampler &sampler)
   {
     // Fill initial grid. One ray per texel.
-    #pragma omp parallel for default(none) shared(singleRayData, sampler, config)
-    for (int y = 0; y < int(config.height); ++y)
-      for (int x = 0; x < int(config.width); ++x)
-        singleRayData[y*config.width + x] = sampler.fetch(x, y);
+    const int height = int(config.height);
+    const int width = int(config.width);
+    std::vector<TexType> singleRayDataParallel(singleRayData.size());
+    #pragma omp parallel for default(none) shared(singleRayDataParallel, sampler, height, width)
+    for (int y = 0; y < height; ++y)
+      for (int x = 0; x < width; ++x)
+        singleRayDataParallel[y * width + x] = sampler.fetch(x, y);
+    singleRayData = singleRayDataParallel;
 
     // Collect suspicious (aliased, with high divergence in neighbourhood) texels.
     m_subPixels.reserve(10*(config.width + config.height));
