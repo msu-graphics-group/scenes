@@ -114,25 +114,34 @@ class SubPixelImageBSP
   {
     uint32_t bestLineIdx = 0;
     uint32_t bestLineScore = config.additionalSamplesCnt + 1; // Amount of wrong classified samples (wrong mean that major amount of samples with the same label are on another side of the line)
+    std::vector<uint32_t> leftLabelsTemp;
+    std::vector<uint32_t> rightLabelsTemp;
     for (uint32_t lineId = 0; lineId < lines.size() && bestLineScore > 0; ++lineId)
     {
+      leftLabelsTemp.clear();
+      rightLabelsTemp.clear();
       const Line &line = lines[lineId];
-      std::unordered_map<uint32_t, uint32_t> leftLabelsTemp;
-      std::unordered_map<uint32_t, uint32_t> rightLabelsTemp;
       for (uint32_t sampleId = 0, sampleEnd = labels.size(); sampleId < sampleEnd; sampleId++)
       {
         const auto currLabel   = labels[sampleId];
         const float signedDist = line[0] * samples[sampleId * 2] + line[1] * samples[sampleId * 2 + 1] + line[2];
         if (signedDist >= 0.f)
+        {
+          if (leftLabelsTemp.size() <= currLabel)
+            leftLabelsTemp.resize(currLabel + 1, 0);
           leftLabelsTemp[currLabel]++;
+        }
         else
+        {
+          if (rightLabelsTemp.size() <= currLabel)
+            rightLabelsTemp.resize(currLabel + 1, 0);
           rightLabelsTemp[currLabel]++;
+        }
       }
       uint32_t score = 0;
-      for (auto leftIt : leftLabelsTemp)
+      for (uint32_t i = 0, ie = std::min(leftLabelsTemp.size(), rightLabelsTemp.size()); i < ie; ++i)
       {
-        if (rightLabelsTemp.count(leftIt.first) != 0)
-          score += std::min(leftIt.second, rightLabelsTemp[leftIt.first]);
+        score += std::min(leftLabelsTemp[i], rightLabelsTemp[i]);
       }
       if (score < bestLineScore)
       {
