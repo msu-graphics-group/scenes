@@ -288,20 +288,17 @@ public:
     uint32_t x, y;
   };
 
-  std::vector<TexType> RemoveDuplicatesAndMakeLabels(const std::vector<TexType>& samples, std::vector<uint32_t>& labels)
+  void RemoveDuplicatesAndMakeLabels(const std::vector<TexType>& samples, std::vector<uint32_t>& labels, std::vector<TexType> &reference_samples)
   {
-    std::vector<TexType> referenceSamples; 
-    referenceSamples.reserve(samples.size());
-    
-    labels.reserve(samples.size());
+    reference_samples.clear();
     labels.clear();
 
     for (uint32_t i = 0; i < samples.size(); ++i)
     {
       bool refFound = false;
-      for (uint32_t j = 0, je = referenceSamples.size(); j < je; ++j)
+      for (uint32_t j = 0, je = reference_samples.size(); j < je; ++j)
       {
-        if (referenceSamples[j] == samples[i])
+        if (reference_samples[j] == samples[i])
         {
           labels.push_back(j);
           refFound = true;
@@ -311,12 +308,10 @@ public:
 
       if (!refFound)
       {
-        labels.push_back(referenceSamples.size());
-        referenceSamples.push_back(samples[i]);
+        labels.push_back(reference_samples.size());
+        reference_samples.push_back(samples[i]);
       }
     }
-
-    return referenceSamples;
   }
 
   std::vector<TexType> RemoveDuplicatesForTList(const std::vector<TexType>& samples)
@@ -533,6 +528,10 @@ public:
     // Process suspicious texels
     std::vector<TexType> samples;
     samples.reserve(samplesCount);
+    std::vector<uint32_t> labels;
+    labels.reserve(samplesCount);
+    std::vector<TexType> referenceSamples;
+    referenceSamples.reserve(samplesCount);
     for (auto texel_idx : suspiciosTexelIds)
     {
       const uint32_t texel_x = texel_idx.x;
@@ -550,8 +549,7 @@ public:
 
       // Make labels for samples
       //
-      std::vector<uint32_t> labels; 
-      std::vector<TexType> referenceSamples = RemoveDuplicatesAndMakeLabels(samples, labels);
+      RemoveDuplicatesAndMakeLabels(samples, labels, referenceSamples);
 
       if (referenceSamples.size() == 1)
         continue;
