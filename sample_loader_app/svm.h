@@ -33,15 +33,11 @@ struct SVM
   int epochs;
 
   std::array<float, 3> weights;
-
-  float hinge_loss(float *x, int y);
-  float soft_margin_loss(float *x, int y);
-
 public:
   SVM(float etha_ = 0.01, float alpha_ = 0.1, int epochs_ = 1000):
   etha(etha_), alpha(alpha_), epochs(epochs_) {}
 
-  void fit(std::vector<float> X_train, const std::vector<int> &Y_train);
+  void fit(const std::vector<float> &X_train, const std::vector<int> &Y_train);
 
   std::array<float, 3> get_weights() const { return weights; }
 
