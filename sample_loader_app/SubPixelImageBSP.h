@@ -366,7 +366,7 @@ public:
 
       // Train SVM
       SVM svm;
-      svm.fit(localSamples, localLabels, localSamples, localLabels);
+      svm.fit(localSamples, localLabels);
       lines.push_back(NormalizeLine(svm.get_weights()));
       // Update cluster ids
       cluster1Id++;
