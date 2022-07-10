@@ -34,22 +34,23 @@ void SVM::fit(const std::vector<float> &X_train, const std::vector<int> &Y_train
   for (uint32_t i = 0; i < weights.size(); ++i)
     weights[i] = distribution(generator);
 
+  const float weightMult = 1.0f - etha * alpha / epochs;
   for (int epoch = 0; epoch < epochs; epoch++)
   {
-    for (uint32_t i = 0; i < Y_train.size(); ++i)
+    for (uint32_t i = 0, x_offset = 0; i < Y_train.size(); ++i, x_offset += pointDim)
     {
-      const uint32_t x_offset = i * pointDim;
       const float margin = Y_train[i] * dot(weights, X_train.data() + x_offset);
       if (margin >= 0.0f) // классифицируем верно
       {
         for (uint32_t j = 0; j < weights.size(); ++j)
-          weights[j] = weights[j] - etha * alpha * weights[j] / epochs;
+          weights[j] *= weightMult;
       }
       else // классифицируем неверно или попадаем на полосу разделения при 0<m<1
       {
+        const float scaledLabel = etha * Y_train[i];
         for (uint32_t j = 0; j < weights.size() - 1; ++j)
-          weights[j] = weights[j] + etha * (Y_train[i] * X_train[x_offset + j] - alpha * weights[j] / epochs);
-        weights.back() = weights.back() + etha * (Y_train[i] - alpha * weights.back() / epochs);
+          weights[j] = weights[j] * weightMult + scaledLabel * X_train[x_offset + j];
+        weights.back() = weights.back() * weightMult + scaledLabel;
       }
     }
   }
