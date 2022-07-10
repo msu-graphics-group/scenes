@@ -524,7 +524,7 @@ public:
     // Collect suspicious (aliased, with high divergence in neighbourhood) texels.
     std::vector<uint2> suspiciosTexelIds = GetSuspiciosTexels(singleRayData);
    
-    const uint32_t samplesCount = config.additionalSamplesCnt;
+    const uint32_t samplesCount = hammSamples.size() / 2;
     uint32_t badSplits = 0;
     uint32_t borderPixels = 0;
     
@@ -535,15 +535,17 @@ public:
     samples.reserve(samplesCount);
     for (auto texel_idx : suspiciosTexelIds)
     {
-      samples.clear();
       const uint32_t texel_x = texel_idx.x;
       const uint32_t texel_y = texel_idx.y;
 
       // Make new samples
-      for (uint32_t i = 0; i < hammSamples.size() / 2; ++i)
+      samples.clear();
+      samples.resize(samplesCount);
+      #pragma omp parallel for
+      for (int i = 0; i < samplesCount; ++i)
       {
-        samples.push_back(sampler.sample((texel_x + 0.5f + hammSamples[2 * i + 0]) / float(config.width), 
-                                         (texel_y + 0.5f + hammSamples[2 * i + 1]) / float(config.height)));
+        samples[i] = sampler.sample((texel_x + 0.5f + hammSamples[2 * i + 0]) / float(config.width), 
+                                         (texel_y + 0.5f + hammSamples[2 * i + 1]) / float(config.height));
       }
 
       // Make labels for samples
