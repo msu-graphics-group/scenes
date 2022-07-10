@@ -37,6 +37,7 @@ void SVM::fit(const std::vector<float> &X_train, const std::vector<int> &Y_train
   const float weightMult = 1.0f - etha * alpha / epochs;
   for (int epoch = 0; epoch < epochs; epoch++)
   {
+    uint32_t errors = 0;
     for (uint32_t i = 0, x_offset = 0; i < Y_train.size(); ++i, x_offset += pointDim)
     {
       const float margin = Y_train[i] * dot(weights, X_train.data() + x_offset);
@@ -51,7 +52,10 @@ void SVM::fit(const std::vector<float> &X_train, const std::vector<int> &Y_train
         for (uint32_t j = 0; j < weights.size() - 1; ++j)
           weights[j] = weights[j] * weightMult + scaledLabel * X_train[x_offset + j];
         weights.back() = weights.back() * weightMult + scaledLabel;
+        errors++;
       }
     }
+    if (errors == 0)
+      break;
   }
 }
