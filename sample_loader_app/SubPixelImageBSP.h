@@ -525,7 +525,8 @@ public:
   void configure(const BaseSampler &sampler)
   {
     // Fill initial grid. One ray per texel.
-    for (uint32_t y = 0; y < config.height; ++y) {
+    #pragma omp parallel for
+    for (int y = 0; y < config.height; ++y) {
       for (uint32_t x = 0; x < config.width; ++x) {
         singleRayData[y * config.width + x] = sampler.fetch(x, y);
         #ifdef STORE_LABELS
