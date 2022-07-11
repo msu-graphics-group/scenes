@@ -39,7 +39,8 @@ public:
 
   void fit(const std::vector<float> &X_train, const std::vector<int> &Y_train);
 
-  std::array<float, 3> get_weights() const { return weights; }
+  static constexpr int ARRAY_SIZE = 3;
+  std::array<float, ARRAY_SIZE> get_weights() const { return weights; }
 
 };
 

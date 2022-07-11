@@ -8,7 +8,7 @@
 #include <set>
 
 template<uint32_t Length>
-__forceinline static float dot(const std::array<float, Length> &a, const float *b)
+inline static float dot(const std::array<float, Length> &a, const float *b)
 {
   float res = 0.f;
   for (uint32_t i = 0; i < Length - 1; ++i)
@@ -40,7 +40,7 @@ void SVM::fit(const std::vector<float> &X_train, const std::vector<int> &Y_train
     uint32_t errors = 0;
     for (uint32_t i = 0, x_offset = 0; i < Y_train.size(); ++i, x_offset += pointDim)
     {
-      const float margin = Y_train[i] * dot(weights, X_train.data() + x_offset);
+      const float margin = Y_train[i] * dot<ARRAY_SIZE>(weights, X_train.data() + x_offset);       
       if (margin >= 0.0f) // классифицируем верно
       {
         for (uint32_t j = 0; j < weights.size(); ++j)
