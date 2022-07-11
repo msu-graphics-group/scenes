@@ -50,8 +50,8 @@ set(HYDRA_SRC2 ${HYDRA_API_FOLDER}/hydra_api/pugixml.cpp
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -fsanitize=address -fsanitize-address-use-after-scope -fno-omit-frame-pointer -fsanitize=leak -fsanitize=undefined -fsanitize=bounds-strict")
 
 
-#add_library(hydra_bsp_image SHARED svm.cpp ${SCENE_LOADER_SRC} ${RENDER_SRC} ${HYDRA_SRC} ${HYDRA_SRC2})	
-add_executable(hydra_bsp_image main.cpp svm.cpp ${SCENE_LOADER_SRC} ${RENDER_SRC} ${HYDRA_SRC})
+add_library(hydra_bsp_image SHARED svm.cpp ${SCENE_LOADER_SRC} ${RENDER_SRC} ${HYDRA_SRC} ${HYDRA_SRC2})	
+#add_executable(hydra_bsp_image main.cpp svm.cpp ${SCENE_LOADER_SRC} ${RENDER_SRC} ${HYDRA_SRC})
 
 set_property(TARGET hydra_bsp_image PROPERTY CXX_STANDARD 17)
 

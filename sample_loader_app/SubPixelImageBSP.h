@@ -621,11 +621,11 @@ public:
       RemoveDuplicatesAndMakeLabels(samples, labels, referenceSamples);
 
       texleId++;
-      if(texleId % 100 == 0)
-      {
-        std::cout << "progress = " << int( 100.0f*float(texleId)/float(suspiciosTexelIds.size()) ) << "% \r";
-        std::cout.flush();
-      }
+      //if(texleId % 100 == 0)
+      //{
+      //  std::cout << "progress = " << int( 100.0f*float(texleId)/float(suspiciosTexelIds.size()) ) << "% \r";
+      //  std::cout.flush();
+      //}
 
       if (referenceSamples.size() == 1)
         continue;
