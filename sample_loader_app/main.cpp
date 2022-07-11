@@ -51,7 +51,7 @@ int main(int argc, char **argv)
 
   std::cout << "[main]: compute 'plain' image ... " << std::endl;
   #pragma omp parallel for default(none) shared(HEIGHT, WIDTH, image, pRayTracerCPU)
-  for (uint32_t j = 0; j < HEIGHT; ++j)
+  for (int j = 0; j < HEIGHT; ++j)
     for (uint32_t i = 0; i < WIDTH; ++i)
       image[j*WIDTH+i] = pRayTracerCPU->CastSingleRay(float(i)+0.5f, float(j)+0.5f).color;
 

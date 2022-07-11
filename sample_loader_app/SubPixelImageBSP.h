@@ -1,10 +1,12 @@
 #pragma once
 
+#include <bitset>
 #include <memory>
 #include <unordered_map>
 #include <variant>
 #include <vector>
 
+#include <cassert>
 #include <cstdint>
 #include <stack>
 #include <iomanip> // for printing integer with leading zerows
@@ -83,25 +85,34 @@ class SubPixelImageBSP
   uint32_t BadSplits(const std::vector<Line>& lines, const std::vector<uint32_t>& labels, const std::vector<float>& samples)
   {
     uint32_t bestLineScore = config.additionalSamplesCnt + 1; // Amount of wrong classified samples (wrong mean that major amount of samples with the same label are on another side of the line)
+    std::vector<uint32_t> leftLabelsTemp;
+    std::vector<uint32_t> rightLabelsTemp;
     for (uint32_t lineId = 0; lineId < lines.size() && bestLineScore > 0; ++lineId)
     {
+      leftLabelsTemp.clear();
+      rightLabelsTemp.clear();
       const Line &line = lines[lineId];
-      std::unordered_map<uint32_t, uint32_t> leftLabelsTemp;
-      std::unordered_map<uint32_t, uint32_t> rightLabelsTemp;
       for (uint32_t sampleId = 0, sampleEnd = labels.size(); sampleId < sampleEnd; sampleId++)
       {
         const auto currLabel   = labels[sampleId];
         const float signedDist = line[0] * samples[sampleId * 2] + line[1] * samples[sampleId * 2 + 1] + line[2];
         if (signedDist >= 0.f)
+        {
+          if (leftLabelsTemp.size() <= currLabel)
+            leftLabelsTemp.resize(currLabel + 1, 0);
           leftLabelsTemp[currLabel]++;
+        }
         else
+        {
+          if (rightLabelsTemp.size() <= currLabel)
+            rightLabelsTemp.resize(currLabel + 1, 0);
           rightLabelsTemp[currLabel]++;
+        }
       }
       uint32_t score = 0;
-      for (auto leftIt : leftLabelsTemp)
+      for (uint32_t i = 0, ie = std::min(leftLabelsTemp.size(), rightLabelsTemp.size()); i < ie; ++i)
       {
-        if (rightLabelsTemp.count(leftIt.first) != 0)
-          score += std::min(leftIt.second, rightLabelsTemp[leftIt.first]);
+        score += std::min(leftLabelsTemp[i], rightLabelsTemp[i]);
       }
       if (score < bestLineScore)
         bestLineScore = score;
@@ -110,73 +121,102 @@ class SubPixelImageBSP
     return bestLineScore;
   }
 
-  uint32_t construct_bsp(std::vector<Line> lines, const std::vector<uint32_t> &labels, const std::vector<float> &samples, const std::vector<TexType> &texData)
+  static const uint32_t MAX_SAMPLES_COUNT = 192;
+
+  struct BSPBuildContext
+  {
+    std::vector<std::bitset<MAX_SAMPLES_COUNT>> lineSampleCache;
+    const std::vector<Line> &lines;
+    const std::vector<uint32_t> &labels;
+    const std::vector<float> &samples;
+    std::vector<std::bitset<MAX_SAMPLES_COUNT>> labelsPerSet;
+    std::vector<uint32_t> labelsPerSetCount;
+    BSPBuildContext(const std::vector<Line> &lines, const std::vector<uint32_t> &labels, const std::vector<float> &samples) :
+    lines(lines), labels(labels), samples(samples)
+    {
+      assert((uint32_t)samples.size() <= MAX_SAMPLES_COUNT);
+      lineSampleCache.resize(lines.size());
+      for (uint32_t i = 0; i < lines.size(); ++i)
+      {
+        for (uint32_t j = 0; j < labels.size(); ++j)
+        {
+          const float signedDist = lines[i][0] * samples[j * 2] + lines[i][1] * samples[j * 2 + 1] + lines[i][2];
+          lineSampleCache[i].set(j, signedDist >= 0.0f);
+        }
+      }
+
+      for (uint32_t i = 0; i < labels.size(); ++i)
+      {
+        if (labels[i] >= labelsPerSet.size())
+          labelsPerSet.resize(labels[i] + 1);
+        labelsPerSet[labels[i]].set(i);
+      }
+      for (uint32_t i = 0; i < labelsPerSet.size(); ++i)
+      {
+        labelsPerSetCount.push_back(labelsPerSet[i].count());
+      }
+    }
+  };
+
+  uint32_t construct_bsp(const std::vector<Line> &lines, const std::vector<uint32_t> &labels, const std::vector<float> &samples)
+  {
+    BSPBuildContext context(lines, labels, samples);
+    std::bitset<MAX_SAMPLES_COUNT> samplesIndices;
+    samplesIndices.flip();
+    std::vector<uint32_t> linesIndices(lines.size());
+    for (uint32_t i = 0; i < linesIndices.size(); ++i)
+    {
+      linesIndices[i] = i;
+    }
+    return construct_bsp(context, samplesIndices, linesIndices);
+  }
+
+  uint32_t construct_bsp(BSPBuildContext &context, const std::bitset<MAX_SAMPLES_COUNT> &samples_indices, const std::vector<uint32_t> &lines_indices)
   {
     uint32_t bestLineIdx = 0;
     uint32_t bestLineScore = config.additionalSamplesCnt + 1; // Amount of wrong classified samples (wrong mean that major amount of samples with the same label are on another side of the line)
-    for (uint32_t lineId = 0; lineId < lines.size() && bestLineScore > 0; ++lineId)
+    for (uint32_t lineId : lines_indices)
     {
-      const Line &line = lines[lineId];
-      std::unordered_map<uint32_t, uint32_t> leftLabelsTemp;
-      std::unordered_map<uint32_t, uint32_t> rightLabelsTemp;
-      for (uint32_t sampleId = 0, sampleEnd = labels.size(); sampleId < sampleEnd; sampleId++)
-      {
-        const auto currLabel   = labels[sampleId];
-        const float signedDist = line[0] * samples[sampleId * 2] + line[1] * samples[sampleId * 2 + 1] + line[2];
-        if (signedDist >= 0.f)
-          leftLabelsTemp[currLabel]++;
-        else
-          rightLabelsTemp[currLabel]++;
-      }
       uint32_t score = 0;
-      for (auto leftIt : leftLabelsTemp)
+      const auto leftSamples = context.lineSampleCache[lineId] & samples_indices;
+      for (uint32_t i = 0; i < context.labelsPerSet.size() && score < bestLineScore; ++i)
       {
-        if (rightLabelsTemp.count(leftIt.first) != 0)
-          score += std::min(leftIt.second, rightLabelsTemp[leftIt.first]);
+        const uint32_t leftCount = (context.labelsPerSet[i] & leftSamples).count();
+        score += std::min(leftCount, context.labelsPerSetCount[i] - leftCount);
       }
       if (score < bestLineScore)
       {
         bestLineScore = score;
         bestLineIdx = lineId;
       }
+      if (bestLineScore == 0)
+        break;
     }
 
-    // Prepare subnodes data  
-    std::vector<uint32_t> leftLabels;  leftLabels.reserve(labels.size());
-    std::vector<uint32_t> rightLabels; rightLabels.reserve(labels.size());
-    std::vector<float> leftSamples;    leftSamples.reserve(samples.size());
-    std::vector<float> rightSamples;   rightSamples.reserve(samples.size());
+    // Prepare subnodes data
 
-    const Line &line = lines[bestLineIdx];
-    bool leftIsLeaf = true;
-    bool rightIsLeaf = true;
+    const Line &line = context.lines[bestLineIdx];
+    bool leftIsLeaf = false;
+    bool rightIsLeaf = false;
 
-    for (uint32_t i = 0, ie = labels.size(); i < ie; ++i)
+    std::bitset<MAX_SAMPLES_COUNT> leftSampleIndices = context.lineSampleCache[bestLineIdx] & samples_indices;
+    std::bitset<MAX_SAMPLES_COUNT> rightSampleIndices = (~context.lineSampleCache[bestLineIdx]) & samples_indices;
+    for (uint32_t i = 0; i < context.labelsPerSet.size(); ++i)
     {
-      if (line[0] * samples[2 * i] + line[1] * samples[2 * i + 1] + line[2] >= 0.f)
+      const auto currentLeftSet = context.labelsPerSet[i] & leftSampleIndices;
+      if (currentLeftSet.count() == leftSampleIndices.count())
       {
-        if (!leftLabels.empty())
-        {
-          leftIsLeaf &= leftLabels.back() == labels[i];
-        }
-        leftLabels.push_back(labels[i]);
-        leftSamples.push_back(samples[2 * i]);
-        leftSamples.push_back(samples[2 * i + 1]);
+        leftIsLeaf = true;
       }
-      else
+      const auto currentRightSet = context.labelsPerSet[i] & rightSampleIndices;
+      if (currentRightSet.count() == rightSampleIndices.count())
       {
-        if (!rightLabels.empty())
-        {
-          rightIsLeaf &= rightLabels.back() == labels[i];
-        }
-        rightLabels.push_back(labels[i]);
-        rightSamples.push_back(samples[2 * i]);
-        rightSamples.push_back(samples[2 * i + 1]);
+        rightIsLeaf = true;
       }
     }
 
-    std::vector<Line> leftLines  = RemoveBadLines(lines, leftSamples);
-    std::vector<Line> rightLines = RemoveBadLines(lines, rightSamples);
+    std::vector<uint32_t> leftLines  = RemoveBadLines(context, leftSampleIndices, lines_indices);
+    std::vector<uint32_t> rightLines = RemoveBadLines(context, rightSampleIndices, lines_indices);
 
     uint32_t nodeIdx = nodesCollection.size();
     nodesCollection.resize(nodesCollection.size() + 1);
@@ -186,28 +226,34 @@ class SubPixelImageBSP
     if (leftIsLeaf || leftLines.empty())
     {
       nodesCollection[rootOffset].isLeftLeaf = 1;
-      nodesCollection[rootOffset].leftIdx = leftLabels[0] + subtexelsCollection.size();
+      uint32_t begin = 0;
+      while (!leftSampleIndices.test(begin))
+        begin++;
+      nodesCollection[rootOffset].leftIdx = context.labels[begin] + subtexelsCollection.size();
     }
     else
     {
       nodesCollection[rootOffset].isLeftLeaf = 0;
-      nodesCollection[rootOffset].leftIdx = construct_bsp(leftLines, leftLabels, leftSamples, texData);
+      nodesCollection[rootOffset].leftIdx = construct_bsp(context, leftSampleIndices, leftLines);
     }
 
     if (rightIsLeaf || rightLines.empty())
     {
       nodesCollection[rootOffset].isRightLeaf = 1;
-      nodesCollection[rootOffset].rightIdx = rightLabels[0] + subtexelsCollection.size();
+      uint32_t begin = 0;
+      while (!rightSampleIndices.test(begin))
+        begin++;
+      nodesCollection[rootOffset].rightIdx = context.labels[begin] + subtexelsCollection.size();
     }
     else
     {
       nodesCollection[rootOffset].isRightLeaf = 0;
-      nodesCollection[rootOffset].rightIdx = construct_bsp(rightLines, rightLabels, rightSamples, texData);
+      nodesCollection[rootOffset].rightIdx = construct_bsp(context, rightSampleIndices, rightLines);
     }
     return nodeIdx;
   }
 
-  void init(const Config &conf)
+  void init()
   {
     singleRayData.resize(config.width * config.height);
     hammSamples.resize(config.additionalSamplesCnt*2);
@@ -270,7 +316,7 @@ class SubPixelImageBSP
 public:
   SubPixelImageBSP(const Config &conf) : config(conf) 
   {
-    init(config);
+    init();
   }
 
   SubPixelImageBSP(uint32_t a_width, uint32_t a_height, float a_radius = 0.5f)
@@ -279,7 +325,7 @@ public:
     config.height         = a_height;
     config.radius         = a_radius;
     config.additionalSamplesCnt = 64;
-    init(config);
+    init();
   }
 
   struct uint2 {
@@ -288,20 +334,17 @@ public:
     uint32_t x, y;
   };
 
-  std::vector<TexType> RemoveDuplicatesAndMakeLabels(const std::vector<TexType>& samples, std::vector<uint32_t>& labels)
+  void RemoveDuplicatesAndMakeLabels(const std::vector<TexType>& samples, std::vector<uint32_t>& labels, std::vector<TexType> &reference_samples)
   {
-    std::vector<TexType> referenceSamples; 
-    referenceSamples.reserve(samples.size());
-    
-    labels.reserve(samples.size());
+    reference_samples.clear();
     labels.clear();
 
     for (uint32_t i = 0; i < samples.size(); ++i)
     {
       bool refFound = false;
-      for (uint32_t j = 0, je = referenceSamples.size(); j < je; ++j)
+      for (uint32_t j = 0, je = reference_samples.size(); j < je; ++j)
       {
-        if (referenceSamples[j] == samples[i])
+        if (reference_samples[j] == samples[i])
         {
           labels.push_back(j);
           refFound = true;
@@ -311,12 +354,10 @@ public:
 
       if (!refFound)
       {
-        labels.push_back(referenceSamples.size());
-        referenceSamples.push_back(samples[i]);
+        labels.push_back(reference_samples.size());
+        reference_samples.push_back(samples[i]);
       }
     }
-
-    return referenceSamples;
   }
 
   std::vector<TexType> RemoveDuplicatesForTList(const std::vector<TexType>& samples)
@@ -366,7 +407,7 @@ public:
 
       // Train SVM
       SVM svm;
-      svm.fit(localSamples, localLabels, localSamples, localLabels);
+      svm.fit(localSamples, localLabels);
       lines.push_back(NormalizeLine(svm.get_weights()));
       // Update cluster ids
       cluster1Id++;
@@ -463,6 +504,28 @@ public:
     return linesInPixel; 
   }
 
+  std::vector<uint32_t> RemoveBadLines(
+    const BSPBuildContext& context,
+    const std::bitset<MAX_SAMPLES_COUNT> &sample_indices,
+    const std::vector<uint32_t> &lines_indices)
+  {
+    std::vector<uint32_t> linesTemp;
+    linesTemp.reserve(lines_indices.size());
+    
+    const uint32_t samplesCount = sample_indices.count();
+    // Remove lines which don't split anything
+    for (const uint32_t lineId : lines_indices)
+    {
+      uint32_t leftCnt = (sample_indices & context.lineSampleCache[lineId]).count();
+      uint32_t rightCnt = samplesCount - leftCnt;
+
+      if (leftCnt != 0 && rightCnt != 0)
+        linesTemp.push_back(lineId);
+    }
+
+    return linesTemp;
+  }
+
   std::vector<Line> RemoveBadLines(const std::vector<Line>& lines, const std::vector<float>& samplesPositions)
   {
     std::vector<Line> linesTemp;
@@ -512,7 +575,8 @@ public:
   void configure(const BaseSampler &sampler)
   {
     // Fill initial grid. One ray per texel.
-    for (uint32_t y = 0; y < config.height; ++y) {
+    #pragma omp parallel for
+    for (int y = 0; y < config.height; ++y) {
       for (uint32_t x = 0; x < config.width; ++x) {
         singleRayData[y * config.width + x] = sampler.fetch(x, y);
         #ifdef STORE_LABELS
@@ -524,7 +588,7 @@ public:
     // Collect suspicious (aliased, with high divergence in neighbourhood) texels.
     std::vector<uint2> suspiciosTexelIds = GetSuspiciosTexels(singleRayData);
    
-    const uint32_t samplesCount = config.additionalSamplesCnt;
+    const uint32_t samplesCount = hammSamples.size() / 2;
     uint32_t badSplits = 0;
     uint32_t borderPixels = 0;
     
@@ -533,23 +597,35 @@ public:
     // Process suspicious texels
     std::vector<TexType> samples;
     samples.reserve(samplesCount);
+    std::vector<uint32_t> labels;
+    labels.reserve(samplesCount);
+    std::vector<TexType> referenceSamples;
+    referenceSamples.reserve(samplesCount);
     for (auto texel_idx : suspiciosTexelIds)
     {
-      samples.clear();
       const uint32_t texel_x = texel_idx.x;
       const uint32_t texel_y = texel_idx.y;
 
       // Make new samples
-      for (uint32_t i = 0; i < hammSamples.size() / 2; ++i)
+      samples.clear();
+      samples.resize(samplesCount);
+      #pragma omp parallel for
+      for (int i = 0; i < samplesCount; ++i)
       {
-        samples.push_back(sampler.sample((texel_x + 0.5f + hammSamples[2 * i + 0]) / float(config.width), 
-                                         (texel_y + 0.5f + hammSamples[2 * i + 1]) / float(config.height)));
+        samples[i] = sampler.sample((texel_x + 0.5f + hammSamples[2 * i + 0]) / float(config.width), 
+                                         (texel_y + 0.5f + hammSamples[2 * i + 1]) / float(config.height));
       }
 
       // Make labels for samples
       //
-      std::vector<uint32_t> labels; 
-      std::vector<TexType> referenceSamples = RemoveDuplicatesAndMakeLabels(samples, labels);
+      RemoveDuplicatesAndMakeLabels(samples, labels, referenceSamples);
+
+      texleId++;
+      if(texleId % 100 == 0)
+      {
+        std::cout << "progress = " << int( 100.0f*float(texleId)/float(suspiciosTexelIds.size()) ) << "% \r";
+        std::cout.flush();
+      }
 
       if (referenceSamples.size() == 1)
         continue;
@@ -574,17 +650,10 @@ public:
 
       if (!lines.empty())
       {
-        const uint32_t offset = construct_bsp(lines, labels, hammSamples, referenceSamples);
+        const uint32_t offset = construct_bsp(lines, labels, hammSamples);
         specialTexels[texel_idx.y*config.width + texel_idx.x] = offset;
         subtexelsCollection.insert(subtexelsCollection.end(), referenceSamples.begin(), referenceSamples.end());
         borderPixels++;
-      }
-
-      texleId++;
-      if(texleId % 100 == 0)
-      {
-        std::cout << "progress = " << int( 100.0f*float(texleId)/float(suspiciosTexelIds.size()) ) << "% \r";
-        std::cout.flush();
       }
     }
     
@@ -598,8 +667,8 @@ public:
 
   TexType& access(float x, float y)
   {
-    const uint32_t x_texel = x * config.width;
-    const uint32_t y_texel = y * config.height;
+    const uint32_t x_texel = static_cast<uint32_t>(x * config.width);
+    const uint32_t y_texel = static_cast<uint32_t>(y * config.height);
     const uint32_t texel_id = y_texel * config.width + x_texel;
     if (specialTexels.count(texel_id) == 0)
       return singleRayData[texel_id];
