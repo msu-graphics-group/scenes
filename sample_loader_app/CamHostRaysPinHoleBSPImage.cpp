@@ -150,9 +150,12 @@ public:
     
     for(int i=0;i<HOST_RAYS_PIPELINE_LENGTH;i++)
       m_pipeline[i].resize(0);
-  
+    
+    auto before = std::chrono::high_resolution_clock::now();
     std::cout << "[PinHoleBSP]: constructing BSPImage ... " << std::endl;
     m_pFrameBuffer->configure(ZeroColorRTSampler(pRayTracerCPU, a_width, a_height));
+    float ms = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - before).count()/1000.f;
+    std::cout << "[PinHoleBSP]: constructing BSPImage ... " << ms << " ms passed " << std::endl;
   }
 
   void ReadParamsFromSettingsNode(pugi::xml_node a_node);
