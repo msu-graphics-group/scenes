@@ -6,6 +6,7 @@
 #include <variant>
 #include <vector>
 
+#include <cassert>
 #include <cstdint>
 #include <stack>
 #include <iomanip> // for printing integer with leading zerows
@@ -19,8 +20,6 @@ void PlaneHammersley(float *result, int n);
 
 //#define STORE_LABELS
 //typedef SurfaceInfo TexType;
-
-extern int epoches_to_improve;
 
 template<typename TexType>
 class SubPixelImageBSP
@@ -122,7 +121,7 @@ class SubPixelImageBSP
     return bestLineScore;
   }
 
-  static const uint32_t MAX_SAMPLES_COUNT = 256;
+  static const uint32_t MAX_SAMPLES_COUNT = 192;
 
   struct BSPBuildContext
   {
@@ -130,11 +129,12 @@ class SubPixelImageBSP
     const std::vector<Line> &lines;
     const std::vector<uint32_t> &labels;
     const std::vector<float> &samples;
-    const std::vector<TexType> &texData;
     std::vector<std::bitset<MAX_SAMPLES_COUNT>> labelsPerSet;
-    BSPBuildContext(const std::vector<Line> &lines, const std::vector<uint32_t> &labels, const std::vector<float> &samples, const std::vector<TexType> &texData) :
-    lines(lines), labels(labels), samples(samples), texData(texData)
+    std::vector<uint32_t> labelsPerSetCount;
+    BSPBuildContext(const std::vector<Line> &lines, const std::vector<uint32_t> &labels, const std::vector<float> &samples) :
+    lines(lines), labels(labels), samples(samples)
     {
+      assert((uint32_t)samples.size() <= MAX_SAMPLES_COUNT);
       lineSampleCache.resize(lines.size());
       for (uint32_t i = 0; i < lines.size(); ++i)
       {
@@ -151,12 +151,16 @@ class SubPixelImageBSP
           labelsPerSet.resize(labels[i] + 1);
         labelsPerSet[labels[i]].set(i);
       }
+      for (uint32_t i = 0; i < labelsPerSet.size(); ++i)
+      {
+        labelsPerSetCount.push_back(labelsPerSet[i].count());
+      }
     }
   };
 
-  uint32_t construct_bsp(const std::vector<Line> &lines, const std::vector<uint32_t> &labels, const std::vector<float> &samples, const std::vector<TexType> &texData)
+  uint32_t construct_bsp(const std::vector<Line> &lines, const std::vector<uint32_t> &labels, const std::vector<float> &samples)
   {
-    BSPBuildContext context(lines, labels, samples, texData);
+    BSPBuildContext context(lines, labels, samples);
     std::bitset<MAX_SAMPLES_COUNT> samplesIndices;
     samplesIndices.flip();
     std::vector<uint32_t> linesIndices(lines.size());
@@ -174,13 +178,11 @@ class SubPixelImageBSP
     for (uint32_t lineId : lines_indices)
     {
       uint32_t score = 0;
-      for (uint32_t i = 0; i < context.labelsPerSet.size(); ++i)
+      const auto leftSamples = context.lineSampleCache[lineId] & samples_indices;
+      for (uint32_t i = 0; i < context.labelsPerSet.size() && score < bestLineScore; ++i)
       {
-        const auto currentSet = context.labelsPerSet[i] & samples_indices;
-        score += std::min(
-          (currentSet & context.lineSampleCache[lineId]).count(),
-          (currentSet & (~context.lineSampleCache[lineId])).count()
-        );
+        const uint32_t leftCount = (context.labelsPerSet[i] & leftSamples).count();
+        score += std::min(leftCount, context.labelsPerSetCount[i] - leftCount);
       }
       if (score < bestLineScore)
       {
@@ -510,11 +512,12 @@ public:
     std::vector<uint32_t> linesTemp;
     linesTemp.reserve(lines_indices.size());
     
+    const uint32_t samplesCount = sample_indices.count();
     // Remove lines which don't split anything
     for (const uint32_t lineId : lines_indices)
     {
       uint32_t leftCnt = (sample_indices & context.lineSampleCache[lineId]).count();
-      uint32_t rightCnt = (sample_indices & (~context.lineSampleCache[lineId])).count();
+      uint32_t rightCnt = samplesCount - leftCnt;
 
       if (leftCnt != 0 && rightCnt != 0)
         linesTemp.push_back(lineId);
@@ -647,14 +650,12 @@ public:
 
       if (!lines.empty())
       {
-        const uint32_t offset = construct_bsp(lines, labels, hammSamples, referenceSamples);
+        const uint32_t offset = construct_bsp(lines, labels, hammSamples);
         specialTexels[texel_idx.y*config.width + texel_idx.x] = offset;
         subtexelsCollection.insert(subtexelsCollection.end(), referenceSamples.begin(), referenceSamples.end());
         borderPixels++;
       }
     }
-
-    std::cout << "Enough epoches: " << epoches_to_improve << std::endl;
     
     std::cout << std::endl;
     auto oldPrec = std::cout.precision(2);
