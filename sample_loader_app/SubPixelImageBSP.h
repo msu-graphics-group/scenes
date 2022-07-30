@@ -162,7 +162,8 @@ class SubPixelImageBSP
   {
     BSPBuildContext context(lines, labels, samples);
     std::bitset<MAX_SAMPLES_COUNT> samplesIndices;
-    samplesIndices.flip();
+    for (uint32_t i = 0; i < context.labels.size(); ++i)
+      samplesIndices.set(i);
     std::vector<uint32_t> linesIndices(lines.size());
     for (uint32_t i = 0; i < linesIndices.size(); ++i)
     {
