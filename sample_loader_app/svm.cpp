@@ -8,12 +8,12 @@
 #include <set>
 
 template<uint32_t Length>
-inline static float dot(const std::array<float, Length> &a, const float *b)
+inline static float dot(const std::array<float, Length> &a, const std::array<float, Length> &b)
 {
   float res = 0.f;
-  for (uint32_t i = 0; i < Length - 1; ++i)
+  for (uint32_t i = 0; i < Length; ++i)
     res += a[i] * b[i];
-  return res + a.back();
+  return res;
 }
 
 
@@ -26,6 +26,13 @@ void SVM::fit(const std::vector<float> &X_train, const std::vector<int> &Y_train
   }
 
   const uint32_t pointDim = X_train.size() / Y_train.size();
+  std::vector<std::array<float, ARRAY_SIZE>> X_mod(Y_train.size());
+  for (uint32_t i = 0; i < X_mod.size(); ++i)
+  {
+    for (uint32_t j = 0; j < ARRAY_SIZE - 1; ++j)
+      X_mod[i][j] = X_train[i * (ARRAY_SIZE - 1) + j] * Y_train[i];
+    X_mod[i].back() = Y_train[i];
+  }
 
   std::default_random_engine generator;
   std::normal_distribution<float> distribution(0.0, 0.05f);
@@ -40,18 +47,13 @@ void SVM::fit(const std::vector<float> &X_train, const std::vector<int> &Y_train
     uint32_t errors = 0;
     for (uint32_t i = 0, x_offset = 0; i < Y_train.size(); ++i, x_offset += pointDim)
     {
-      const float margin = Y_train[i] * dot<ARRAY_SIZE>(weights, X_train.data() + x_offset);       
-      if (margin >= 0.0f) // классифицируем верно
+      const float margin = dot<ARRAY_SIZE>(weights, X_mod[i]);
+      for (uint32_t j = 0; j < weights.size(); ++j)
+        weights[j] *= weightMult;
+      if (margin < 0.0f) // классифицируем верно
       {
         for (uint32_t j = 0; j < weights.size(); ++j)
-          weights[j] *= weightMult;
-      }
-      else // классифицируем неверно или попадаем на полосу разделения при 0<m<1
-      {
-        const float scaledLabel = etha * Y_train[i];
-        for (uint32_t j = 0; j < weights.size() - 1; ++j)
-          weights[j] = weights[j] * weightMult + scaledLabel * X_train[x_offset + j];
-        weights.back() = weights.back() * weightMult + scaledLabel;
+          weights[j] += etha * X_mod[i][j];
         errors++;
       }
     }
