@@ -171,8 +171,7 @@ bool RayTracer::LoadScene(const std::string& path)
   {
     std::cout << "[LoadScene]: mesh = " << meshPath.c_str() << std::endl;
     auto currMesh = cmesh::LoadMeshFromVSGF(meshPath.c_str());
-    auto geomId   = m_pAccelStruct->AddGeom_Triangles4f(currMesh.vPos4f.data(), currMesh.vPos4f.size(),
-                                                        currMesh.indices.data(), currMesh.indices.size());
+    auto geomId   = m_pAccelStruct->AddGeom_Triangles3f((const float*)currMesh.vPos4f.data(), currMesh.vPos4f.size(), currMesh.indices.data(), currMesh.indices.size(), BUILD_HIGH, sizeof(float)*4);
     (void)geomId; // silence "unused variable" compiler warnings
 
     m_matIdOffsets.push_back(m_matIdByPrimId.size());

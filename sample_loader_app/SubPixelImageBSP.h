@@ -638,7 +638,7 @@ public:
       #endif
 
       std::vector<Line> lines = RemoveBadLines(GetLinesFromTriangles(RemoveDuplicatesForTList(samples), sampler, texel_x, texel_y), hammSamples);   
-
+      
       uint32_t tScores = BadSplits(lines, labels, hammSamples);
       if(tScores > 0) 
       {
@@ -648,6 +648,8 @@ public:
         if(sScores < tScores)
           lines = lines2;
       }
+
+      //auto lines = RemoveBadLines(GetLinesSVM(referenceSamples, labels), hammSamples);
 
       if (!lines.empty())
       {
