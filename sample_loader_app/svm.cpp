@@ -42,6 +42,9 @@ void SVM::fit(const std::vector<float> &X_train, const std::vector<int> &Y_train
     weights[i] = distribution(generator);
 
   const float weightMult = 1.0f - etha * alpha / epochs;
+  const uint32_t MAX_EPOCHS_WO_PROGRESS = 5;
+  uint32_t epochsWithoutProgress = 0;
+  uint32_t lastErrors = Y_train.size();
   for (int epoch = 0; epoch < epochs; epoch++)
   {
     uint32_t errors = 0;
@@ -59,5 +62,18 @@ void SVM::fit(const std::vector<float> &X_train, const std::vector<int> &Y_train
     }
     if (errors == 0)
       break;
+    if (lastErrors <= errors)
+    {
+      epochsWithoutProgress++;
+    }
+    else
+    {
+      epochsWithoutProgress = 0;
+    }
+    if (epochsWithoutProgress == MAX_EPOCHS_WO_PROGRESS)
+    {
+      break;
+    }
+    lastErrors = errors;
   }
 }
