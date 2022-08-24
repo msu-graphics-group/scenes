@@ -46,8 +46,8 @@ void SVM::fit(const std::vector<float> &X_train, const std::vector<int> &Y_train
     for (const auto &x : X_mod)
     {
       const float margin = dot(weights, x);
-      // for (uint32_t j = 0; j < weights.size(); ++j)
-      //   weights[j] *= weightMult;
+      for (uint32_t j = 0; j < weights.size(); ++j)
+        weights[j] *= weightMult;
       if (margin < 0.0f)
       {
         for (uint32_t j = 0; j < weights.size(); ++j)
