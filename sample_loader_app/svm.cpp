@@ -30,8 +30,8 @@ void SVM::fit(const std::vector<float> &X_train, const std::vector<int> &Y_train
   for (uint32_t i = 0; i < X_mod.size(); ++i)
   {
     for (uint32_t j = 0; j < ARRAY_SIZE - 1; ++j)
-      X_mod[i][j] = X_train[i * (ARRAY_SIZE - 1) + j] * Y_train[i];
-    X_mod[i].back() = Y_train[i];
+      X_mod[i][j] = X_train[i * (ARRAY_SIZE - 1) + j] * Y_train[i] * etha;
+    X_mod[i].back() = Y_train[i] * etha;
   }
 
   std::default_random_engine generator;
@@ -48,15 +48,15 @@ void SVM::fit(const std::vector<float> &X_train, const std::vector<int> &Y_train
   for (int epoch = 0; epoch < epochs; epoch++)
   {
     uint32_t errors = 0;
-    for (uint32_t i = 0, x_offset = 0; i < Y_train.size(); ++i, x_offset += pointDim)
+    for (const auto &x : X_mod)
     {
-      const float margin = dot<ARRAY_SIZE>(weights, X_mod[i]);
+      const float margin = dot<ARRAY_SIZE>(weights, x);
       for (uint32_t j = 0; j < weights.size(); ++j)
         weights[j] *= weightMult;
-      if (margin < 0.0f) // классифицируем верно
+      if (margin < 0.0f)
       {
         for (uint32_t j = 0; j < weights.size(); ++j)
-          weights[j] += etha * X_mod[i][j];
+          weights[j] += x[j];
         errors++;
       }
     }
