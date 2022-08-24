@@ -19,13 +19,9 @@ inline static float dot(const std::array<float, Length> &a, const std::array<flo
 
 void SVM::fit(const std::vector<float> &X_train, const std::vector<int> &Y_train)
 {
-  if (std::set(Y_train.begin(), Y_train.end()).size() != 2)
-  {
-    std::cout << "Number of classes in Y is not equal 2!" << std::endl;
-    return;
-  }
+  assert(std::set(Y_train.begin(), Y_train.end()).size() != 2); // Number of classes in Y is not equal 2!
+  assert(weights.size() == X_train.size() / Y_train.size() + 1);
 
-  const uint32_t pointDim = X_train.size() / Y_train.size();
   std::vector<std::array<float, ARRAY_SIZE>> X_mod(Y_train.size());
   for (uint32_t i = 0; i < X_mod.size(); ++i)
   {
@@ -37,7 +33,6 @@ void SVM::fit(const std::vector<float> &X_train, const std::vector<int> &Y_train
   std::default_random_engine generator;
   std::normal_distribution<float> distribution(0.0, 0.05f);
 
-  assert(weights.size() == pointDim + 1);
   for (uint32_t i = 0; i < weights.size(); ++i)
     weights[i] = distribution(generator);
 
@@ -50,9 +45,9 @@ void SVM::fit(const std::vector<float> &X_train, const std::vector<int> &Y_train
     uint32_t errors = 0;
     for (const auto &x : X_mod)
     {
-      const float margin = dot<ARRAY_SIZE>(weights, x);
-      for (uint32_t j = 0; j < weights.size(); ++j)
-        weights[j] *= weightMult;
+      const float margin = dot(weights, x);
+      // for (uint32_t j = 0; j < weights.size(); ++j)
+      //   weights[j] *= weightMult;
       if (margin < 0.0f)
       {
         for (uint32_t j = 0; j < weights.size(); ++j)
