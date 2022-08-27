@@ -93,9 +93,7 @@ Actual data is stored in the cloud (Yandex disk) since it is quite large.
 
 | Model                                                                     | Screenshot                                        | License |
 |---------------------------------------------------------------------------|:-------------------------------------------------:|:-------:|
-| [scene_08](https://disk.yandex.ru/d/TqcjyFsrSLelbw/scene_08)              | ![](05_interiors/screenshots/scene_08.jpeg)       |         |
 | [scene_10](https://disk.yandex.ru/d/TqcjyFsrSLelbw/scene_10)              | ![](05_interiors/screenshots/scene_10.jpeg)       | [Custom](https://www.cger.com/site/4741.html) |
-| [scene_21](https://disk.yandex.ru/d/TqcjyFsrSLelbw/scene_21)              | ![](05_interiors/screenshots/scene_21.jpeg)       |         |
 
 ### 06_exteriors [[back to contents]](#top) <a name="06_exteriors"/>
 Various exterior scenes made for [Hydra render](https://github.com/Ray-Tracing-Systems/HydraCore)
@@ -113,9 +111,6 @@ Actual data is stored in the cloud (Yandex disk) since it is quite large.
 | [asteroid_03](https://disk.yandex.ru/d/RhDT-ty4hi7b_Q)                    | ![](07_single_mesh/screenshots/asteroid03.jpeg)   |
 | [asteroid_04](https://disk.yandex.ru/d/RhDT-ty4hi7b_Q)                    | ![](07_single_mesh/screenshots/asteroid04.jpeg)   |
 | [asteroid_05](https://disk.yandex.ru/d/RhDT-ty4hi7b_Q)                    | ![](07_single_mesh/screenshots/asteroid05.jpeg)   |
-| [starship_01](https://disk.yandex.ru/d/RhDT-ty4hi7b_Q)                    | ![](07_single_mesh/screenshots/starship01.jpeg)   |
-| [starship_02](https://disk.yandex.ru/d/RhDT-ty4hi7b_Q)                    | ![](07_single_mesh/screenshots/starship02.jpeg)   |
-
 
 
 ### 08 [[back to contents]](#top) <a name="08"/>
@@ -138,13 +133,12 @@ Actual data is stored in the cloud (Yandex disk) since it is quite large.
 | [L2.2_Cry_Sponza_hydra](https://disk.yandex.ru/d/n8SzslkmaYHFow/L2.2_Cry_Sponza_hydra)                      | ![](09_orb/screenshots/L2.2_Cry_Sponza_hydra.jpg)           | CC BY 3.0 © 2010 Frank Meinl, Crytek |
 | [L2.3_San_Miguel_hydra](https://disk.yandex.ru/d/n8SzslkmaYHFow/L2.3_San_Miguel_hydra)                      | ![](09_orb/screenshots/L2.3_San_Miguel_hydra.jpg)           | CC BY 3.0 © [Guillermo M. Leal Llaguno](http://www.evvisual.com/) |
 | [L3.1_Hair_ball_hydra](https://disk.yandex.ru/d/n8SzslkmaYHFow/L3.1_Hair_ball_hydra)                        | ![](09_orb/screenshots/L3.1_Hair_ball_hydra.jpg)            | Hairball model CC BY 3.0 © 2010 NVIDIA Research |
-| [L3.2_exterior_hydra](https://disk.yandex.ru/d/n8SzslkmaYHFow/L3.2_exterior_hydra)                          | ![](09_orb/screenshots/L3.2_exterior_hydra.jpg)             |
+| [L3.2_exterior_hydra](https://disk.yandex.ru/d/n8SzslkmaYHFow/L3.2_exterior_hydra)                          | ![](09_orb/screenshots/L3.2_exterior_hydra.jpg)             | CC BY 3.0 © Pavel Kuzin |
 | [L4.1_statues_hydra](https://disk.yandex.ru/d/n8SzslkmaYHFow/L4.1_statues_hydra)                            | ![](09_orb/screenshots/L4.1_statues_hydra.jpg)              | Models - CC BY 4.0 © 2016 [Geoffrey Marchal](https://sketchfab.com/models/4a644dd9390547e0954596d4dd52072b#), [Stanford scan](https://graphics.stanford.edu/data/3Dscanrep) © 1996 Stanford University |
-| [L5.1_windows_lights](https://disk.yandex.ru/d/n8SzslkmaYHFow/L5.1_windows_lights)                          | ![](09_orb/screenshots/L5.1_windows_lights.jpg)             |
 | [L6.2_fireplace_hydra](https://disk.yandex.ru/d/n8SzslkmaYHFow/L6.2_fireplace_hydra)                        | ![](09_orb/screenshots/L6.2_fireplace_hydra.jpg)            | CC BY 3.0 © [Wig42](http://www.blendswap.com/user/Wig42) |
 | [L10.1_Room_Veach_hydra](https://disk.yandex.ru/d/n8SzslkmaYHFow/L10.1_Room_Veach_hydra)                    | ![](09_orb/screenshots/L10.1_Room_Veach_hydra.jpg)          | CC0, based on a scene by Eric Veach |
 | [L10.2_glossy_room_hydra](https://disk.yandex.ru/d/n8SzslkmaYHFow/L10.2_glossy_room_hydra)                  | ![](09_orb/screenshots/L10.2_glossy_room_hydra.jpg)         | CC0, based on a scene by Eric Veach |
-| [L10.4_glossy_kitchen_hydra](https://disk.yandex.ru/d/n8SzslkmaYHFow/L10.4_glossy_kitchen_hydra)            | ![](09_orb/screenshots/L10.4_glossy_kitchen_hydra.jpg)      |
+| [L10.4_glossy_kitchen_hydra](https://disk.yandex.ru/d/n8SzslkmaYHFow/L10.4_glossy_kitchen_hydra)            | ![](09_orb/screenshots/L10.4_glossy_kitchen_hydra.jpg)      | CC BY 3.0 © Pavel Kuzin |
 | [L11_selfillum_hydra](https://disk.yandex.ru/d/n8SzslkmaYHFow/L11_selfillum_hydra)                          | ![](09_orb/screenshots/L11_selfillum_hydra.jpg)             | CC0 |
 
 
