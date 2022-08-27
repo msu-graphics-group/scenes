@@ -104,13 +104,13 @@ Collection of various single mesh scenes
 
 Actual data is stored in the cloud (Yandex disk) since it is quite large.
 
-| Model                                                                     | Screenshot                                        |
-|---------------------------------------------------------------------------|:-------------------------------------------------:|
-| [asteroid_01](https://disk.yandex.ru/d/RhDT-ty4hi7b_Q)                    | ![](07_single_mesh/screenshots/asteroid01.jpeg)   |
-| [asteroid_02](https://disk.yandex.ru/d/RhDT-ty4hi7b_Q)                    | ![](07_single_mesh/screenshots/asteroid02.jpeg)   |
-| [asteroid_03](https://disk.yandex.ru/d/RhDT-ty4hi7b_Q)                    | ![](07_single_mesh/screenshots/asteroid03.jpeg)   |
-| [asteroid_04](https://disk.yandex.ru/d/RhDT-ty4hi7b_Q)                    | ![](07_single_mesh/screenshots/asteroid04.jpeg)   |
-| [asteroid_05](https://disk.yandex.ru/d/RhDT-ty4hi7b_Q)                    | ![](07_single_mesh/screenshots/asteroid05.jpeg)   |
+| Model                                                                     | Screenshot                                        | License |
+|---------------------------------------------------------------------------|:-------------------------------------------------:|:-------:|
+| [asteroid_01](https://disk.yandex.ru/d/RhDT-ty4hi7b_Q)                    | ![](07_single_mesh/screenshots/asteroid01.jpeg)   | CC0     |
+| [asteroid_02](https://disk.yandex.ru/d/RhDT-ty4hi7b_Q)                    | ![](07_single_mesh/screenshots/asteroid02.jpeg)   | CC0     |
+| [asteroid_03](https://disk.yandex.ru/d/RhDT-ty4hi7b_Q)                    | ![](07_single_mesh/screenshots/asteroid03.jpeg)   | CC0     |
+| [asteroid_04](https://disk.yandex.ru/d/RhDT-ty4hi7b_Q)                    | ![](07_single_mesh/screenshots/asteroid04.jpeg)   | CC0     |
+| [asteroid_05](https://disk.yandex.ru/d/RhDT-ty4hi7b_Q)                    | ![](07_single_mesh/screenshots/asteroid05.jpeg)   | CC0     |
 
 
 ### 08 [[back to contents]](#top) <a name="08"/>
