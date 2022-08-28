@@ -22,7 +22,7 @@ void PlaneHammersley(float *result, int n);
 //#define STORE_LABELS
 //typedef SurfaceInfo TexType;
 
-#define ENABLE_PARALLEL 1
+// #define ENABLE_PARALLEL 1
 
 template<typename TexType>
 class SubPixelImageBSP
@@ -658,8 +658,17 @@ public:
     
     std::cout << "suspiciosTexelIds.size() = " << suspiciosTexelIds.size() << std::endl;
 
-    Timer subsamplingTimer("SubSampling", false);
-    Timer bspTimer("BspBuild", false);
+    std::vector<std::vector<TexType>> perPixelSamples;
+    perPixelSamples.reserve(suspiciosTexelIds.size());
+    std::vector<std::vector<uint32_t>> perPixelLabels;
+    perPixelLabels.reserve(suspiciosTexelIds.size());
+    std::vector<std::vector<TexType>> perPixelRefs;
+    perPixelRefs.reserve(suspiciosTexelIds.size());
+
+    std::vector<uint2> samplesWithBSP;
+
+    {
+    Timer subsamplingTimer("SubSampling");
     // Process suspicious texels
     #if ENABLE_PARALLEL
     #pragma omp parallel for
@@ -667,46 +676,21 @@ public:
     {
       const auto texel_idx = suspiciosTexelIds[iter];
     #else
-    std::vector<TexType> samples;
-    samples.reserve(samplesCount);
-    std::vector<uint32_t> labels;
-    labels.reserve(samplesCount);
-    std::vector<TexType> referenceSamples;
-    referenceSamples.reserve(samplesCount);
     for (auto texel_idx : suspiciosTexelIds)
     {
     #endif
       const uint32_t texel_x = texel_idx.x;
       const uint32_t texel_y = texel_idx.y;
 
-      // Make new samples
-      #if ENABLE_PARALLEL
-      std::vector<TexType> samples;
-      samples.reserve(samplesCount);
+      std::vector<TexType> samples(samplesCount);
       std::vector<uint32_t> labels;
       labels.reserve(samplesCount);
       std::vector<TexType> referenceSamples;
       referenceSamples.reserve(samplesCount);
-      #endif
-      samples.clear();
-      samples.resize(samplesCount);
-      // #pragma omp parallel for
-      #if ENABLE_PARALLEL
-      #pragma omp critical
-      #endif
-      {
-        subsamplingTimer.start();
-      }
       for (int i = 0; i < samplesCount; ++i)
       {
         samples[i] = sampler.sample((texel_x + 0.5f + hammSamples[2 * i + 0]) / float(config.width), 
                                          (texel_y + 0.5f + hammSamples[2 * i + 1]) / float(config.height));
-      }
-      #if ENABLE_PARALLEL
-      #pragma omp critical
-      #endif
-      {
-        subsamplingTimer.stop();
       }
 
       // Make labels for samples
@@ -716,18 +700,40 @@ public:
       if (referenceSamples.size() == 1)
         continue;
 
+      #if ENABLE_PARALLEL
+      #pragma omp critical
+      #endif
+      {
+        perPixelSamples.emplace_back(std::move(samples));
+        perPixelLabels.emplace_back(std::move(labels));
+        perPixelRefs.emplace_back(std::move(referenceSamples));
+        samplesWithBSP.push_back(texel_idx);
+      }
+      
+
       #ifdef STORE_LABELS
       specialLabels[texel_idx.y*config.width + texel_idx.x] = labels;
       for (size_t i = 0; i < samples.size(); ++i)
         specialLabels[texel_idx.y*config.width + texel_idx.x][i] = samples[i].geomId;
       #endif
+    }
+    }
 
-      #if ENABLE_PARALLEL
-      #pragma omp critical
-      #endif
-      {
-        bspTimer.start();
-      }
+
+
+    {
+    Timer bspTimer("BspBuild");
+    #if ENABLE_PARALLEL
+    #pragma omp parallel for
+    #endif
+    for (int iter = 0; iter < samplesWithBSP.size(); ++ iter)
+    {
+      const auto texel_idx = samplesWithBSP[iter];
+      const auto &samples = perPixelSamples[iter];
+      const auto &labels = perPixelLabels[iter];
+      const auto &referenceSamples = perPixelRefs[iter];
+      const uint32_t texel_x = texel_idx.x;
+      const uint32_t texel_y = texel_idx.y;
 
       std::vector<Line> lines = RemoveBadLines(GetLinesFromTriangles(RemoveDuplicatesForTList(samples), sampler, texel_x, texel_y), hammSamples);   
       
@@ -758,13 +764,7 @@ public:
         borderPixels++;
         }
       }
-
-      #if ENABLE_PARALLEL
-      #pragma omp critical
-      #endif
-      {
-        bspTimer.stop();
-      }
+    }
     }
     
     std::cout << std::endl;
