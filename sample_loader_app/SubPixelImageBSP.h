@@ -5,6 +5,7 @@
 #include <unordered_map>
 #include <variant>
 #include <vector>
+#include <chrono>
 
 #include <cassert>
 #include <cstdint>
@@ -20,6 +21,8 @@ void PlaneHammersley(float *result, int n);
 
 //#define STORE_LABELS
 //typedef SurfaceInfo TexType;
+
+#define ENABLE_PARALLEL 1
 
 template<typename TexType>
 class SubPixelImageBSP
@@ -131,8 +134,9 @@ class SubPixelImageBSP
     const std::vector<float> &samples;
     std::vector<std::bitset<MAX_SAMPLES_COUNT>> labelsPerSet;
     std::vector<uint32_t> labelsPerSetCount;
-    BSPBuildContext(const std::vector<Line> &lines, const std::vector<uint32_t> &labels, const std::vector<float> &samples) :
-    lines(lines), labels(labels), samples(samples)
+    std::vector<TexType> referenceSamples;
+    BSPBuildContext(const std::vector<Line> &lines, const std::vector<uint32_t> &labels, const std::vector<float> &samples, const std::vector<TexType> &referenceSamples) :
+    lines(lines), labels(labels), samples(samples), referenceSamples(referenceSamples)
     {
       assert((uint32_t)samples.size() <= MAX_SAMPLES_COUNT);
       lineSampleCache.resize(lines.size());
@@ -158,9 +162,9 @@ class SubPixelImageBSP
     }
   };
 
-  uint32_t construct_bsp(const std::vector<Line> &lines, const std::vector<uint32_t> &labels, const std::vector<float> &samples)
+  uint32_t construct_bsp(const std::vector<Line> &lines, const std::vector<uint32_t> &labels, const std::vector<float> &samples, const std::vector<TexType> &referenceSamples)
   {
-    BSPBuildContext context(lines, labels, samples);
+    BSPBuildContext context(lines, labels, samples, referenceSamples);
     std::bitset<MAX_SAMPLES_COUNT> samplesIndices;
     for (uint32_t i = 0; i < context.labels.size(); ++i)
       samplesIndices.set(i);
@@ -169,9 +173,10 @@ class SubPixelImageBSP
     {
       linesIndices[i] = i;
     }
-    return construct_bsp(context, samplesIndices, linesIndices);
+    return construct_bsp<true>(context, samplesIndices, linesIndices);
   }
 
+  template<bool firstCall = false>
   uint32_t construct_bsp(BSPBuildContext &context, const std::bitset<MAX_SAMPLES_COUNT> &samples_indices, const std::vector<uint32_t> &lines_indices)
   {
     uint32_t bestLineIdx = 0;
@@ -219,7 +224,12 @@ class SubPixelImageBSP
     std::vector<uint32_t> leftLines  = RemoveBadLines(context, leftSampleIndices, lines_indices);
     std::vector<uint32_t> rightLines = RemoveBadLines(context, rightSampleIndices, lines_indices);
 
-    uint32_t nodeIdx = nodesCollection.size();
+    uint32_t nodeIdx;
+    #if ENABLE_PARALLEL
+    #pragma omp critical
+    #endif
+    {
+    nodeIdx = nodesCollection.size();
     nodesCollection.resize(nodesCollection.size() + 1);
     size_t rootOffset = nodesCollection.size()-1;      // previously: "auto& root = nodesCollection.back(); 
                                                        // This is not valid because reference may become broken after next nodesCollection.resize() in subsequent recursive call of 'construct_bsp'! 
@@ -250,6 +260,11 @@ class SubPixelImageBSP
     {
       nodesCollection[rootOffset].isRightLeaf = 0;
       nodesCollection[rootOffset].rightIdx = construct_bsp(context, rightSampleIndices, rightLines);
+    }
+    if (firstCall)
+    {
+      subtexelsCollection.insert(subtexelsCollection.end(), context.referenceSamples.begin(), context.referenceSamples.end());
+    }
     }
     return nodeIdx;
   }
@@ -552,9 +567,47 @@ public:
     return linesTemp;
   }
 
+  class Timer {
+    std::chrono::time_point<std::chrono::steady_clock> startTime;
+    float duration = 0;
+    std::string name;
+    bool inProgress = false;
+  public:
+    Timer(const std::string& s, bool StartOnCreate = true) {
+      if (StartOnCreate)
+      {
+        start();
+      }
+      name = s;
+    }
+
+    void stop() {
+      assert(inProgress);
+      inProgress = false;
+      duration += std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - startTime).count();
+    }
+
+    void start() {
+      assert(!inProgress);
+      inProgress = true;
+      startTime = std::chrono::high_resolution_clock::now();
+    }
+
+    ~Timer() {
+      if (inProgress) {
+        stop();
+      }
+      std::cout << duration / 1000.f << " ms for " << name << std::endl;
+    }
+  };
+
   std::vector<uint2> GetSuspiciosTexels(const std::vector<TexType>& a_singleRayData)
   {
+    Timer timer("Get suspicios");
     std::vector<uint2> suspiciosTexelIds;
+    #if ENABLE_PARALLEL
+    #pragma omp parallel for
+    #endif
     for (int i = 0; i < int(config.width); ++i) {
       for (int j = 0; j < int(config.height); ++j) {
         
@@ -566,17 +619,26 @@ public:
             needResample = (a_singleRayData[y * config.width + x] != texel);
         
         if (needResample)
+        {
+          #if ENABLE_PARALLEL
+          #pragma omp critical
+          #endif
           suspiciosTexelIds.push_back(uint2(i,j));
+        }
       }
     }
     return suspiciosTexelIds;
   }
-  
+
   template<typename BaseSampler>
   void configure(const BaseSampler &sampler)
   {
     // Fill initial grid. One ray per texel.
+    {
+    Timer timer("InitSampling");
+    #if ENABLE_PARALLEL
     #pragma omp parallel for
+    #endif
     for (int y = 0; y < config.height; ++y) {
       for (uint32_t x = 0; x < config.width; ++x) {
         singleRayData[y * config.width + x] = sampler.fetch(x, y);
@@ -584,6 +646,7 @@ public:
         geomIdsPerPixel[y * config.width + x] = singleRayData[y * config.width + x].geomId;
         #endif
       }
+    }
     }
 
     // Collect suspicious (aliased, with high divergence in neighbourhood) texels.
@@ -594,8 +657,16 @@ public:
     uint32_t borderPixels = 0;
     
     std::cout << "suspiciosTexelIds.size() = " << suspiciosTexelIds.size() << std::endl;
-    size_t texleId = 0;
+
+    Timer subsamplingTimer("SubSampling", false);
+    Timer bspTimer("BspBuild", false);
     // Process suspicious texels
+    #if ENABLE_PARALLEL
+    #pragma omp parallel for
+    for (int iter = 0; iter < suspiciosTexelIds.size(); ++ iter)
+    {
+      const auto texel_idx = suspiciosTexelIds[iter];
+    #else
     std::vector<TexType> samples;
     samples.reserve(samplesCount);
     std::vector<uint32_t> labels;
@@ -604,29 +675,43 @@ public:
     referenceSamples.reserve(samplesCount);
     for (auto texel_idx : suspiciosTexelIds)
     {
+    #endif
       const uint32_t texel_x = texel_idx.x;
       const uint32_t texel_y = texel_idx.y;
 
       // Make new samples
+      #if ENABLE_PARALLEL
+      std::vector<TexType> samples;
+      samples.reserve(samplesCount);
+      std::vector<uint32_t> labels;
+      labels.reserve(samplesCount);
+      std::vector<TexType> referenceSamples;
+      referenceSamples.reserve(samplesCount);
+      #endif
       samples.clear();
       samples.resize(samplesCount);
-      #pragma omp parallel for
+      // #pragma omp parallel for
+      #if ENABLE_PARALLEL
+      #pragma omp critical
+      #endif
+      {
+        subsamplingTimer.start();
+      }
       for (int i = 0; i < samplesCount; ++i)
       {
         samples[i] = sampler.sample((texel_x + 0.5f + hammSamples[2 * i + 0]) / float(config.width), 
                                          (texel_y + 0.5f + hammSamples[2 * i + 1]) / float(config.height));
       }
+      #if ENABLE_PARALLEL
+      #pragma omp critical
+      #endif
+      {
+        subsamplingTimer.stop();
+      }
 
       // Make labels for samples
       //
       RemoveDuplicatesAndMakeLabels(samples, labels, referenceSamples);
-
-      texleId++;
-      //if(texleId % 100 == 0)
-      //{
-      //  std::cout << "progress = " << int( 100.0f*float(texleId)/float(suspiciosTexelIds.size()) ) << "% \r";
-      //  std::cout.flush();
-      //}
 
       if (referenceSamples.size() == 1)
         continue;
@@ -637,26 +722,48 @@ public:
         specialLabels[texel_idx.y*config.width + texel_idx.x][i] = samples[i].geomId;
       #endif
 
+      #if ENABLE_PARALLEL
+      #pragma omp critical
+      #endif
+      {
+        bspTimer.start();
+      }
+
       std::vector<Line> lines = RemoveBadLines(GetLinesFromTriangles(RemoveDuplicatesForTList(samples), sampler, texel_x, texel_y), hammSamples);   
       
       uint32_t tScores = BadSplits(lines, labels, hammSamples);
       if(tScores > 0) 
       {
         auto lines2 = RemoveBadLines(GetLinesSVM(referenceSamples, labels), hammSamples);
-        badSplits++;
         uint32_t sScores = BadSplits(lines2, labels, hammSamples);
         if(sScores < tScores)
           lines = lines2;
-      }
 
-      //auto lines = RemoveBadLines(GetLinesSVM(referenceSamples, labels), hammSamples);
+        #if ENABLE_PARALLEL
+        #pragma omp critical
+        #endif
+        {
+          badSplits++;
+        }
+      }
 
       if (!lines.empty())
       {
-        const uint32_t offset = construct_bsp(lines, labels, hammSamples);
+        const uint32_t offset = construct_bsp(lines, labels, hammSamples, referenceSamples);
+        #if ENABLE_PARALLEL
+        #pragma omp critical
+        #endif
+        {
         specialTexels[texel_idx.y*config.width + texel_idx.x] = offset;
-        subtexelsCollection.insert(subtexelsCollection.end(), referenceSamples.begin(), referenceSamples.end());
         borderPixels++;
+        }
+      }
+
+      #if ENABLE_PARALLEL
+      #pragma omp critical
+      #endif
+      {
+        bspTimer.stop();
       }
     }
     
