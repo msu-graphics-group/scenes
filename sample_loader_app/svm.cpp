@@ -19,7 +19,7 @@ inline static float dot(const std::array<float, Length> &a, const std::array<flo
 
 void SVM::fit(const std::vector<float> &X_train, const std::vector<int> &Y_train)
 {
-  assert(std::set(Y_train.begin(), Y_train.end()).size() != 2); // Number of classes in Y is not equal 2!
+  assert(std::set(Y_train.begin(), Y_train.end()).size() == 2); // Number of classes in Y is not equal 2!
   assert(weights.size() == X_train.size() / Y_train.size() + 1);
 
   std::vector<std::array<float, ARRAY_SIZE>> X_mod(Y_train.size());
