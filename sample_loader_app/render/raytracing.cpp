@@ -39,6 +39,18 @@ SurfaceInfo RayTracer::CastSingleRay(float x, float y)
   return outSam;
 }
 
+std::array<SurfaceInfo, PACKET_SIZE> RayTracer::CastRayPacket(const std::array<float, PACKET_SIZE * 2> &coords)
+{
+  std::array<SurfaceInfo, PACKET_SIZE> outSam;
+  std::array<LiteMath::float4, PACKET_SIZE> rayPosAndNear, rayDirAndFar;
+  for (uint32_t i = 0; i < PACKET_SIZE; ++i)
+  {
+    kernel_InitEyeRay(coords[2 * i], coords[2 * i + 1], rayPosAndNear.data() + i, rayDirAndFar.data() + i);
+  }
+  kernel_RayTrace(rayPosAndNear, rayDirAndFar, outSam);
+  return outSam;
+}
+
 
 void RayTracer::kernel_InitEyeRay(float tidX, float tidY, LiteMath::float4* rayPosAndNear, LiteMath::float4* rayDirAndFar)
 {
@@ -73,6 +85,23 @@ void RayTracer::kernel_RayTrace(uint32_t tidX, uint32_t tidY, const LiteMath::fl
   //  res.color = 0x000000FF;
 
   out_sample[tidY * m_width + tidX] = res;
+}
+
+void RayTracer::kernel_RayTrace(const std::array<LiteMath::float4, PACKET_SIZE> &rayPosAndNear,
+                                const std::array<LiteMath::float4, PACKET_SIZE> &rayDirAndFar, std::array<SurfaceInfo, PACKET_SIZE> &out_sample)
+{
+  std::array<CRT_Hit, PACKET_SIZE> hit = m_pAccelStruct->RayQuery_NearestHit16(rayPosAndNear, rayDirAndFar);
+  
+  for (uint32_t i = 0; i < PACKET_SIZE; ++i)
+  {
+    SurfaceInfo res;
+    res.instId = hit[i].instId; 
+    res.geomId = hit[i].geomId;
+    res.primId = hit[i].primId;
+    res.color  = m_palette[hit[i].instId % palette_size];
+
+    out_sample[i] = res;
+  }
 }
 
 //std::vector<SurfaceInfo> RemoveDuplicateLabels(const SurfaceInfo* a_samples, size_t a_samplesNum)

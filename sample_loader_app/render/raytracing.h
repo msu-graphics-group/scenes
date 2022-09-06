@@ -26,6 +26,7 @@ public:
   RayTracer(uint32_t a_width, uint32_t a_height) : m_width(a_width), m_height(a_height), m_fwidth(a_width), m_fheight(a_height) {}
   bool LoadScene(const std::string& path);
   SurfaceInfo CastSingleRay(float x, float y);
+  std::array<SurfaceInfo, PACKET_SIZE> CastRayPacket(const std::array<float, PACKET_SIZE * 2> &coords);
 
   std::vector<LiteMath::float2> GetAllTriangleVerts2D(const SurfaceInfo* a_compressed, size_t a_compressedNum);
 
@@ -33,6 +34,8 @@ protected:
 
   void kernel_InitEyeRay(float tidX, float tidY, LiteMath::float4* rayPosAndNear, LiteMath::float4* rayDirAndFar);
   void kernel_RayTrace(uint32_t tidX, uint32_t tidY, const LiteMath::float4* rayPosAndNear, const LiteMath::float4* rayDirAndFar, SurfaceInfo* out_sample);
+  void kernel_RayTrace(const std::array<LiteMath::float4, PACKET_SIZE> &rayPosAndNear,
+                                const std::array<LiteMath::float4, PACKET_SIZE> &rayDirAndFar, std::array<SurfaceInfo, PACKET_SIZE> &out_sample);
 
   uint32_t m_width;
   uint32_t m_height;

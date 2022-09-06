@@ -24,6 +24,8 @@ public:
   void     UpdateInstance(uint32_t a_instanceId, const LiteMath::float4x4& a_matrix) override;
 
   CRT_Hit  RayQuery_NearestHit(LiteMath::float4 posAndNear, LiteMath::float4 dirAndFar) override;
+  std::array<CRT_Hit, PACKET_SIZE>  RayQuery_NearestHit16(
+    const std::array<LiteMath::float4, PACKET_SIZE> &posAndNear, const std::array<LiteMath::float4, PACKET_SIZE> & dirAndFar) override;
   bool     RayQuery_AnyHit(LiteMath::float4 posAndNear, LiteMath::float4 dirAndFar) override;
 
 protected:
@@ -88,7 +90,7 @@ void error_handler(void* userPtr, const RTCError code, const char* str)
 
 EmbreeRT::EmbreeRT()
 {
-  m_device = rtcNewDevice("isa=avx2");
+  m_device = rtcNewDevice("isa=avx2,frequency_level=simd512,verbose=3");
   m_scene  = nullptr;
   
   rtcSetDeviceErrorFunction(m_device, error_handler, nullptr);
@@ -310,6 +312,69 @@ CRT_Hit  EmbreeRT::RayQuery_NearestHit(LiteMath::float4 posAndNear, LiteMath::fl
     result.geomId = uint32_t(-1);
     result.instId = uint32_t(-1);
     result.primId = uint32_t(-1);
+  }
+
+  return result;
+}
+
+std::array<CRT_Hit, PACKET_SIZE> EmbreeRT::RayQuery_NearestHit16(
+    const std::array<LiteMath::float4, PACKET_SIZE> &posAndNear, const std::array<LiteMath::float4, PACKET_SIZE> & dirAndFar)
+{    
+  // The intersect context can be used to set intersection
+  // filters or flags, and it also contains the instance ID stack
+  // used in multi-level instancing.
+  // 
+  struct RTCIntersectContext context;
+  rtcInitIntersectContext(&context);
+
+  // The ray hit structure holds both the ray and the hit.
+  // The user must initialize it properly -- see API documentation
+  // for rtcIntersect1() for details.
+  //  
+  struct RTCRayHit16 rayhit;
+  for (uint32_t i = 0; i < PACKET_SIZE; ++i)
+  {
+    rayhit.ray.org_x[i] = posAndNear[i].x;
+    rayhit.ray.org_y[i] = posAndNear[i].y;
+    rayhit.ray.org_z[i] = posAndNear[i].z;
+    rayhit.ray.tnear[i] = posAndNear[i].w;
+
+    rayhit.ray.dir_x[i] = dirAndFar[i].x;
+    rayhit.ray.dir_y[i] = dirAndFar[i].y;
+    rayhit.ray.dir_z[i] = dirAndFar[i].z;
+    rayhit.ray.tfar[i]  = dirAndFar[i].w; // std::numeric_limits<float>::infinity();
+    
+    rayhit.ray.mask[i]   = -1;
+    rayhit.ray.flags[i]  = 0;
+    rayhit.hit.geomID[i]    = RTC_INVALID_GEOMETRY_ID;
+    rayhit.hit.instID[0][i] = RTC_INVALID_GEOMETRY_ID;
+  }
+
+  // There are multiple variants of rtcIntersect. This one intersects a single ray with the scene.
+  //
+  const int validMask = 0xFFFF;
+  rtcIntersect16(&validMask, m_scene, &context, &rayhit);
+
+  std::array<CRT_Hit, PACKET_SIZE> result;
+  for (uint32_t i = 0; i < PACKET_SIZE; ++i)
+  {
+    if(rayhit.hit.geomID[i] != RTC_INVALID_GEOMETRY_ID)
+    {
+      result[i].t      = rayhit.ray.tfar[i];
+      result[i].geomId = m_geomIdByInstId[rayhit.hit.instID[0][i]];
+      result[i].instId = rayhit.hit.instID[0][i];
+      result[i].primId = rayhit.hit.primID[i];
+      result[i].coords[1] = rayhit.hit.u[i];
+      result[i].coords[0] = rayhit.hit.v[i];
+      result[i].coords[2] = 1.0f - rayhit.hit.v[i] - rayhit.hit.u[i];
+    }
+    else
+    {
+      result[i].t      = rayhit.ray.tfar[i];
+      result[i].geomId = uint32_t(-1);
+      result[i].instId = uint32_t(-1);
+      result[i].primId = uint32_t(-1);
+    }
   }
 
   return result;

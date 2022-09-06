@@ -23,6 +23,7 @@ void PlaneHammersley(float *result, int n);
 //typedef SurfaceInfo TexType;
 
 // #define ENABLE_PARALLEL 1
+#define PACKET_SAMPLING 1
 
 template<typename TexType>
 class SubPixelImageBSP
@@ -667,6 +668,10 @@ public:
 
     std::vector<uint2> samplesWithBSP;
 
+    std::cout << "Samples count " << samplesCount << std::endl;
+
+    uint32_t samplesCnt = 0;
+
     {
     Timer subsamplingTimer("SubSampling");
     // Process suspicious texels
@@ -687,11 +692,34 @@ public:
       labels.reserve(samplesCount);
       std::vector<TexType> referenceSamples;
       referenceSamples.reserve(samplesCount);
+      #if PACKET_SAMPLING
+      for (int i = 0; i < samplesCount / PACKET_SIZE; ++i)
+      {
+        std::array<float, PACKET_SIZE * 2> coords;
+        for (uint32_t j = 0; j < PACKET_SIZE; ++j)
+        {
+          coords[2 * j + 0] = (texel_x + 0.5f + hammSamples[2 * (i * PACKET_SIZE + j) + 0]);
+          coords[2 * j + 1] = (texel_y + 0.5f + hammSamples[2 * (i * PACKET_SIZE + j) + 1]);
+        }
+        const auto packet = sampler.sample(coords);
+        samplesCnt++;
+        for (uint32_t j = 0; j < PACKET_SIZE; ++j)
+          samples[i * PACKET_SIZE + j] = packet[j];
+      }
+      for (int i = samplesCount / PACKET_SIZE * PACKET_SIZE; i < samplesCount; ++i)
+      {
+        samples[i] = sampler.sample((texel_x + 0.5f + hammSamples[2 * i + 0]) / float(config.width), 
+                                          (texel_y + 0.5f + hammSamples[2 * i + 1]) / float(config.height));
+        samplesCnt++;
+      }
+      #else
       for (int i = 0; i < samplesCount; ++i)
       {
         samples[i] = sampler.sample((texel_x + 0.5f + hammSamples[2 * i + 0]) / float(config.width), 
-                                         (texel_y + 0.5f + hammSamples[2 * i + 1]) / float(config.height));
+                                          (texel_y + 0.5f + hammSamples[2 * i + 1]) / float(config.height));
+        samplesCnt++;
       }
+      #endif
 
       // Make labels for samples
       //
@@ -719,6 +747,7 @@ public:
     }
     }
 
+    std::cout << "Tracers " << samplesCnt << std::endl;
 
 
     {

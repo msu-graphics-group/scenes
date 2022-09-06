@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <cstdint>
 #include <cstddef>
 #include "LiteMath.h"
@@ -11,6 +12,8 @@ enum BuildQuality
   BUILD_HIGH   = 2,
   BUILD_REFIT  = 3,
 };
+
+const uint32_t PACKET_SIZE = 16;
 
 /**
 \brief API to ray-scene intersection on CPU
@@ -97,6 +100,8 @@ struct ISceneObject
   \return             - closest hit surface info
   */
   virtual CRT_Hit RayQuery_NearestHit(LiteMath::float4 posAndNear, LiteMath::float4 dirAndFar) = 0;
+  virtual std::array<CRT_Hit, PACKET_SIZE> RayQuery_NearestHit16(
+    const std::array<LiteMath::float4, PACKET_SIZE> &posAndNear, const std::array<LiteMath::float4, PACKET_SIZE> & dirAndFar) = 0;
 
   /**
   \brief Find any hit for ray segment (Near,Far). If none is found return false, else return true;
