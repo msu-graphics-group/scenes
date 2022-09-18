@@ -23,7 +23,7 @@ void PlaneHammersley(float *result, int n);
 //typedef SurfaceInfo TexType;
 
 // #define ENABLE_PARALLEL 1
-#define PACKET_SAMPLING 1
+#define PACKET_SAMPLING 0
 
 template<typename TexType>
 class SubPixelImageBSP
@@ -569,7 +569,9 @@ public:
   }
 
   class Timer {
-    std::chrono::time_point<std::chrono::steady_clock> startTime;
+    //std::chrono::time_point<std::chrono::steady_clock> startTime;
+    std::chrono::_V2::system_clock::time_point startTime;
+    //std::chrono::time_point startTime;
     float duration = 0;
     std::string name;
     bool inProgress = false;
