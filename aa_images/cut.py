@@ -12,15 +12,14 @@ def process_folder(path, crop, out_folder):
 
 
 
-process_folder("scene1_input", [400,143-13],   "scene1_output1")
-process_folder("scene1_input", [400,843-13],   "scene1_output2")
-process_folder("scene1_input", [520,915-25+1], "scene1_output3")
-process_folder("scene1_input", [590,600-25+1], "scene1_output4")
-process_folder("scene1_input", [540,455-25+1], "scene1_output5")
+#process_folder("scene1_input", [400,143-13],   "scene1_output1")
+#process_folder("scene1_input", [400,843-13],   "scene1_output2")
+#process_folder("scene1_input", [520,915-25+1], "scene1_output3")
+#process_folder("scene1_input", [590,600-25+1], "scene1_output4")
+#process_folder("scene1_input", [540,455-25+1], "scene1_output5")
 
-#yOffset = 13
-#process_folder("scene1_input", [[400,143-yOffset]],     "scene1_output1")
-#process_folder("scene1_input", [[400,843-yOffset]],     "scene1_output2")
-#process_folder("scene1_input", [[540,543-100-yOffset]], "scene1_output3")
-#process_folder("scene1_input", [[590,600-25+1]],        "scene1_output4")
-
+process_folder("scene2_input", [175,117-50+1],   "scene2_output1")
+process_folder("scene2_input", [415,305-13],   "scene2_output2")
+process_folder("scene2_input", [510,720-50+50+1], "scene2_output3")
+process_folder("scene2_input", [225,80-50+50+1], "scene2_output4")
+process_folder("scene2_input", [760,225-15+1], "scene2_output5")
