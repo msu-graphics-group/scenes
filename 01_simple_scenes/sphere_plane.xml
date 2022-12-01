@@ -47,7 +47,7 @@
     <indices type="array1i" bytesize="24" offset="248" apply="tlist" />
     <matindices type="array1i" bytesize="8" offset="272" apply="primitive" />
   </mesh>
-  <mesh id="1" name="my_sphere" type="vsgf" bytesize="731728" loc="data/sphere.vsgf" offset="0" vertNum="8385" triNum="16384" dl="0" path="" bbox="-2.5 2.5 -2.5 2.5 -2.5 2.5">
+  <mesh id="1" name="my_sphere" type="vsgf" bytesize="731728" loc="data/sphere.vsgf" offset="0" vertNum="8385" triNum="16384" dl="0" path="" bbox="-1 1 -1 1 -1 1">
     <positions type="array4f" bytesize="134160" offset="24" apply="vertex" />
     <normals type="array4f" bytesize="134160" offset="134184" apply="vertex" />
     <tangents type="array4f" bytesize="134160" offset="268344" apply="vertex" />
@@ -55,7 +55,7 @@
     <indices type="array1i" bytesize="196608" offset="469584" apply="tlist" />
     <matindices type="array1i" bytesize="65536" offset="666192" apply="primitive" />
   </mesh>
-  <mesh id="2" name="my_area_light_lightmesh" type="vsgf" bytesize="280" loc="data/chunk_00003.vsgf" offset="0" vertNum="4" triNum="2" dl="0" path="" light_id="0" bbox="    -1 1 0 0 -1 1">
+  <mesh id="2" name="my_area_light_lightmesh" type="vsgf" bytesize="280" loc="data/chunk_00003.vsgf" offset="0" vertNum="4" triNum="2" dl="0" path="" light_id="0" bbox="-1 1 0 0 -1 1">
     <positions type="array4f" bytesize="64" offset="24" apply="vertex" />
     <normals type="array4f" bytesize="64" offset="88" apply="vertex" />
     <tangents type="array4f" bytesize="64" offset="152" apply="vertex" />
@@ -78,9 +78,9 @@
     <fov>45</fov>
     <nearClipPlane>0.01</nearClipPlane>
     <farClipPlane>100.0</farClipPlane>
-    <up>0 1 0</up>
     <position>0 0 4</position>
     <look_at>0 -1 0</look_at>
+    <up>0 1 0</up>
   </camera>
 </cam_lib>
 <render_lib>
