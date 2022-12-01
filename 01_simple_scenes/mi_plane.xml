@@ -71,7 +71,8 @@
         </transform>
     </shape>
 
-    <shape type="sphere" id="mirrorsphere">
+    <shape type="obj" id="mirrorsphere">
+        <string name="filename" value="data/sphere.obj"/>
         <transform name="to_world">
             <scale value="1"/>
             <translate x="0" y="-1" z="0"/>
