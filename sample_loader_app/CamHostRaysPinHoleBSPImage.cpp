@@ -387,12 +387,26 @@ void PinHoleBSPImageAccum::FinishRendering()
   std::string out1 = outImageFolder + "/z_out1_bsp.png";
   saveImageLDR(out1.c_str(), imageLDR, m_width, m_height, 4);
   
+  std::cout << "begin save upsampled images ... " << std::endl;
+
+  const int CROP_SIZE     = 256;
+  const int UPSAMPLE_SIZE = 32;
+  
+
+  for(int y=0; y < int(m_height); y+=CROP_SIZE) {
+    for(int x=0; x < int(m_width);x+=CROP_SIZE) {
+      SaveUpsampledRegion(x,y,CROP_SIZE,UPSAMPLE_SIZE);
+    }
+    std::cout << "progress = " << 100.0f*float(y+CROP_SIZE)/(m_height) << "%" << std::endl;
+  }
+
+
   //bunny scene:
-  SaveUpsampledRegion(400,m_height-130-50-1,50,16);
-  SaveUpsampledRegion(400,143,              50,16);
-  SaveUpsampledRegion(520,m_height-915-25-1,50,16);
-  SaveUpsampledRegion(590,m_height-600-25-1,50,16);
-  SaveUpsampledRegion(540,m_height-455-25-1,50,16);
+  //SaveUpsampledRegion(400,m_height-130-50-1,50,16);
+  //SaveUpsampledRegion(400,143,              50,16);
+  //SaveUpsampledRegion(520,m_height-915-25-1,50,16);
+  //SaveUpsampledRegion(590,m_height-600-25-1,50,16);
+  //SaveUpsampledRegion(540,m_height-455-25-1,50,16);
 
   //inst scene:
   //SaveUpsampledRegion(110,m_height-725-50-1,50,16);
