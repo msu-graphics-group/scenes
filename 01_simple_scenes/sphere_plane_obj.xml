@@ -41,7 +41,6 @@
 <geometry_lib total_chunks="4">
   <mesh id="0" name="plane"     type="obj" loc="unknown" path="data/plane2.obj" dl="1" />
   <mesh id="1" name="my_sphere" type="obj" loc="unknown" path="data/sphere.obj" dl="1" /> 
- 
   <mesh id="2" name="my_area_light_lightmesh" type="vsgf" bytesize="280" loc="data/chunk_00003.vsgf" offset="0" vertNum="4" triNum="2" dl="0" path="" light_id="0" bbox="    -1 1 0 0 -1 1">
     <positions type="array4f" bytesize="64" offset="24" apply="vertex" />
     <normals type="array4f" bytesize="64" offset="88" apply="vertex" />

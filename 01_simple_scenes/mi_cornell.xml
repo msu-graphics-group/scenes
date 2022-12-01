@@ -15,8 +15,8 @@
         <float name="focus_distance" value="1000"/>
         <float name="fov" value="45"/>
         <transform name="to_world">
-            <lookat origin="0,  0,  4"
-                    target="0,  -1,  0"
+            <lookat origin="0,  0,  14"
+                    target="0,  0,  0"
                     up    ="0,  1,  0"/>
         </transform>
         <sampler type="independent">
@@ -38,15 +38,25 @@
     </bsdf>
 
     <bsdf type="diffuse" id="white">
-        <rgb name="reflectance" value="1 1 1"/>
+        <rgb name="reflectance" value="1, 1, 1"/>
     </bsdf>
+
+    <bsdf type="diffuse" id="green">
+        <rgb name="reflectance" value="0.0, 0.5, 0.0"/>
+    </bsdf>
+
+    <bsdf type="diffuse" id="red">
+        <rgb name="reflectance" value="0.5, 0.0, 0.0"/>
+    </bsdf>
+
+    <bsdf type="dielectric" id="glass"/>
 
     <bsdf type="conductor" id="mirror"/>
 
     <!-- Light -->
 
     <shape type="obj" id="light">
-        <string name="filename" value="meshes/cbox_luminaire2.obj"/>
+      <string name="filename" value="meshes/cbox_luminaire2.obj"/>
         <transform name="to_world">
           <translate x="0" y="3.85" z="0"/>
         </transform>
@@ -59,19 +69,50 @@
     <!-- Shapes -->
 
     <shape type="obj" id="floor">
-        <string name="filename" value="meshes/cbox_floor2.obj"/>
+        <string name="filename" value="meshes/cbox_floor.obj"/>
         <ref id="gray"/>
         <transform name="to_world">
-          <scale value="10.0"/>
-          <translate x="0" y="-2" z="0"/>
+          <scale value="4.0"/>
         </transform>
     </shape>
 
-    <shape type="obj" id="mirrorsphere">
-        <string name="filename" value="data/sphere.obj"/>
+    <shape type="obj" id="ceiling">
+        <string name="filename" value="meshes/cbox_ceiling.obj"/>
+        <ref id="gray"/>
         <transform name="to_world">
-            <scale value="1"/>
-            <translate x="0" y="-1" z="0"/>
+          <scale value="4.0"/>
+        </transform>
+    </shape>
+
+    <shape type="obj" id="back">
+        <string name="filename" value="meshes/cbox_back.obj"/>
+        <ref id="gray"/>
+        <transform name="to_world">
+          <scale value="4.0"/>
+        </transform>
+    </shape>
+
+    <shape type="obj" id="greenwall">
+        <string name="filename" value="meshes/cbox_greenwall.obj"/>
+        <ref id="green"/>
+        <transform name="to_world">
+          <scale value="4.0"/>
+        </transform>
+    </shape>
+
+    <shape type="obj" id="redwall">
+        <string name="filename" value="meshes/cbox_redwall.obj"/>
+        <ref id="red"/>
+        <transform name="to_world">
+          <scale value="4.0"/>
+        </transform>
+    </shape>
+
+    <shape type="obj" id="rabbit">
+        <string name="filename" value="data/bunny.obj"/>
+        <transform name="to_world">
+            <scale value="3"/>
+            <translate x="1" y="-4.2" z="0"/>
         </transform>
         <ref id="mirror"/>
     </shape>
