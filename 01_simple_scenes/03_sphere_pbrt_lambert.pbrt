@@ -3,7 +3,7 @@ LookAt 0 0 4   0 -1 0   0 1 0
 Camera "perspective" "float fov" [45]
 
 Film "image" "integer xresolution" [1024 ] "integer yresolution" [1024 ] 
-    "string filename" "y03_sphere_pbrt_lambert.png"
+    "string filename" "y03_sphere_pbrt_lambert.exr"
 
 Integrator "path" "integer maxdepth" [6]
 
