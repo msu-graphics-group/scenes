@@ -9,7 +9,7 @@ image1 = cv2.imread(sys.argv[1], cv2.IMREAD_ANYCOLOR | cv2.IMREAD_ANYDEPTH)
 image2 = cv2.imread(sys.argv[2], cv2.IMREAD_ANYCOLOR | cv2.IMREAD_ANYDEPTH)
 
 # compute difference
-difference = cv2.subtract(image1, image2)*10
+difference = cv2.absdiff(image1, image2)*10
 
 cv2.imshow('diff*10', difference)
 cv2.waitKey(0)
