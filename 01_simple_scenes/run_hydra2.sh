@@ -1,1 +1,1 @@
-$HOME/hydra/hydra -inputlib "." -statefile "10_sphere_hydra_gltf2lite.xml" -out "y10_sphere_hydra2_gltf2lite.exr" -nowindow 1 
+$HOME/hydra/hydra -inputlib "." -statefile "01_cornell_hydra_lambert.xml" -out "y01_cornell_hydra2_lambert.exr" -nowindow 1 
