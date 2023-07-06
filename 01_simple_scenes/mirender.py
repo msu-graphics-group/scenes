@@ -5,7 +5,7 @@ import time
 #print(mi.variants()) # ['scalar_rgb', 'scalar_spectral', 'cuda_ad_rgb', 'llvm_ad_rgb']
 mi.set_variant("scalar_rgb")
 scene = mi.load_file(sys.argv[1])
-image = mi.render(scene, spp=1024)
+image = mi.render(scene) # spp = 1024
 
 rawName = sys.argv[1].split(".")[0]
 
